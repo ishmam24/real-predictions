@@ -8,7 +8,8 @@ export type Team = {
   id: string;
   name: string;       // "Arsenal"
   tla: string;        // "ARS"
-  color: string;      // brand colour for the badge chip
+  color: string;      // brand colour (badge fallback / accents)
+  crestUrl?: string;  // official club crest image (from FPL)
 };
 
 export type Player = {
