@@ -13,140 +13,140 @@ export const teams: Team[] = [
     "name": "Arsenal",
     "tla": "ARS",
     "color": "#EF0107",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t3.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t3.png"
   },
   {
     "id": "avl",
     "name": "Aston Villa",
     "tla": "AVL",
     "color": "#95BFE5",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t7.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t7.png"
   },
   {
     "id": "bou",
     "name": "Bournemouth",
     "tla": "BOU",
     "color": "#DA291C",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t91.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t91.png"
   },
   {
     "id": "bre",
     "name": "Brentford",
     "tla": "BRE",
     "color": "#E30613",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t94.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t94.png"
   },
   {
     "id": "bha",
     "name": "Brighton",
     "tla": "BHA",
     "color": "#0057B8",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t36.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t36.png"
   },
   {
     "id": "che",
     "name": "Chelsea",
     "tla": "CHE",
     "color": "#034694",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t8.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t8.png"
   },
   {
     "id": "cov",
     "name": "Coventry City",
     "tla": "COV",
     "color": "#59B7E4",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t9.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t9.png"
   },
   {
     "id": "cry",
     "name": "Crystal Palace",
     "tla": "CRY",
     "color": "#1B458F",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t31.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t31.png"
   },
   {
     "id": "eve",
     "name": "Everton",
     "tla": "EVE",
     "color": "#003399",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t11.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t11.png"
   },
   {
     "id": "ful",
     "name": "Fulham",
     "tla": "FUL",
     "color": "#1a1a1a",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t54.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t54.png"
   },
   {
     "id": "hul",
     "name": "Hull City",
     "tla": "HUL",
     "color": "#F5A12D",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t88.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t88.png"
   },
   {
     "id": "ips",
     "name": "Ipswich Town",
     "tla": "IPS",
     "color": "#3A64A3",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t40.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t40.png"
   },
   {
     "id": "lee",
     "name": "Leeds",
     "tla": "LEE",
     "color": "#1D428A",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t2.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t2.png"
   },
   {
     "id": "liv",
     "name": "Liverpool",
     "tla": "LIV",
     "color": "#C8102E",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t14.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t14.png"
   },
   {
     "id": "mci",
     "name": "Man City",
     "tla": "MCI",
     "color": "#6CABDD",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t43.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t43.png"
   },
   {
     "id": "mun",
     "name": "Man Utd",
     "tla": "MUN",
     "color": "#DA291C",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t1.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t1.png"
   },
   {
     "id": "new",
     "name": "Newcastle",
     "tla": "NEW",
     "color": "#241F20",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t4.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t4.png"
   },
   {
     "id": "nfo",
     "name": "Nott'm Forest",
     "tla": "NFO",
     "color": "#DD0000",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t17.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t17.png"
   },
   {
     "id": "tot",
     "name": "Spurs",
     "tla": "TOT",
     "color": "#132257",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t6.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t6.png"
   },
   {
     "id": "sun",
     "name": "Sunderland",
     "tla": "SUN",
     "color": "#EB172B",
-    "crestUrl": "https://resources.premierleague.com/premierleague/badges/rb/t56.svg"
+    "crestUrl": "https://resources.premierleague.com/premierleague/badges/70/t56.png"
   }
 ];
 
