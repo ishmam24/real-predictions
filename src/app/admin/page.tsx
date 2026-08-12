@@ -14,6 +14,7 @@ import { fixtures } from "@/lib/mock-data";
 import { teamById, squadFor } from "@/lib/mock-data";
 import { useStore, currentGameweek } from "@/lib/store";
 import { PotmPicker } from "@/components/PotmPicker";
+import { GameweekBuilder } from "@/components/GameweekBuilder";
 
 export default function AdminPage() {
   const gwFixtures = fixtures.filter((f) => f.gameweekId === currentGameweek.id);
@@ -25,9 +26,14 @@ export default function AdminPage() {
         <h1 className="text-2xl font-extrabold">🛠️ Admin</h1>
       </div>
       <p className="text-sm mb-4" style={{ color: "var(--rp-muted)" }}>
-        Gameweek {currentGameweek.number} — enter results & Player of the Match, then settle.
+        Build the gameweek automatically, then enter results & Player of the Match.
       </p>
 
+      {/* Step 1: auto-pick the 5 fixtures */}
+      <GameweekBuilder />
+
+      {/* Step 2: enter results for the current gameweek */}
+      <h2 className="font-bold mb-2">📝 Enter results — Gameweek {currentGameweek.number}</h2>
       <div className="flex flex-col gap-3">
         {gwFixtures.map((f) => (
           <AdminFixtureRow key={f.id} fixtureId={f.id} />
