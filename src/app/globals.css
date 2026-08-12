@@ -1,26 +1,69 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   Real Predictions — theme
+   Premier-League-inspired: deep purple base, magenta accent, mint for points.
+   Mobile-first: the whole app is designed as a phone-width column.
+   ========================================================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --rp-bg: #f4f2f7;
+  --rp-surface: #ffffff;
+  --rp-surface-2: #faf9fc;
+  --rp-border: #e7e2ef;
+  --rp-text: #1c1424;
+  --rp-muted: #6b6377;
+  --rp-purple: #37003c;
+  --rp-purple-2: #4a0d54;
+  --rp-accent: #ff2882;   /* PL magenta */
+  --rp-mint: #05c98a;     /* points / positive */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --rp-bg: #16101c;
+    --rp-surface: #201829;
+    --rp-surface-2: #271d33;
+    --rp-border: #33283f;
+    --rp-text: #f3eef8;
+    --rp-muted: #a99fb5;
+    --rp-purple: #2a002e;
+    --rp-purple-2: #3d0a45;
   }
 }
 
+html, body {
+  background: var(--rp-bg);
+  color: var(--rp-text);
+  -webkit-font-smoothing: antialiased;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* The app renders inside a phone-width shell centred on larger screens. */
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--rp-bg);
+  position: relative;
+  padding-bottom: 84px; /* room for the bottom nav */
+}
+
+.card {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: 18px;
+}
+
+/* Number input: hide spinners, keep it big and tappable. */
+.score-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
