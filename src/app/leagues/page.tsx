@@ -69,7 +69,7 @@ export default function LeaguesPage() {
             className="flex-1 px-3 py-2.5 rounded-xl"
             style={{ background: "var(--rp-surface-2)", border: "1px solid var(--rp-border)", color: "var(--rp-text)" }}
           />
-          <button onClick={createLeague} className="px-4 rounded-xl font-semibold text-white" style={{ background: "var(--rp-accent)" }}>
+          <button onClick={createLeague} className="btn-primary px-4 rounded-xl font-semibold">
             Create
           </button>
         </div>

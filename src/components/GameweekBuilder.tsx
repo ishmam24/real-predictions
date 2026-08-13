@@ -74,8 +74,7 @@ export function GameweekBuilder() {
 
       {!data && (
         <button onClick={generate} disabled={loading}
-          className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-50"
-          style={{ background: "var(--rp-accent)" }}>
+          className="btn-primary w-full py-3 rounded-xl font-semibold">
           {loading ? "Ranking fixtures…" : "Generate suggestions"}
         </button>
       )}
@@ -114,7 +113,7 @@ export function GameweekBuilder() {
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs font-bold" style={{ color: "var(--rp-muted)" }}>{f.score}</span>
                       <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{ background: on ? "var(--rp-accent)" : "transparent", color: on ? "#fff" : "var(--rp-muted)", border: on ? "none" : "1px solid var(--rp-border)" }}>
+                        style={{ background: on ? "var(--rp-accent-fill)" : "transparent", color: on ? "var(--rp-on-accent)" : "var(--rp-muted)", border: on ? "none" : "1px solid var(--rp-border)" }}>
                         {on ? "✓" : "+"}
                       </span>
                     </div>

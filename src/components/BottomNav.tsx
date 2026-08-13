@@ -14,7 +14,7 @@ export function BottomNav() {
   const pathname = usePathname();
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-20"
+      className="fixed bottom-0 left-0 right-0 z-20 md:hidden"
       style={{
         background: "var(--rp-surface)",
         borderTop: "1px solid var(--rp-border)",
