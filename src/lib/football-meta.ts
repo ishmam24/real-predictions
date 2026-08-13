@@ -45,3 +45,33 @@ const rivalrySet = new Set(RIVALRIES.map(([a, b]) => [a, b].sort().join("|")));
 export function isDerby(a: string, b: string): boolean {
   return rivalrySet.has([a, b].sort().join("|"));
 }
+
+// Home grounds, keyed by tla. Fixtures are played at the home team's stadium
+// (the team shown on the left of a scoreboard card), so a lookup by the home
+// side's tla gives the venue with no extra data source — FPL doesn't provide it.
+export const STADIUMS: Record<string, string> = {
+  ARS: "Emirates Stadium",
+  AVL: "Villa Park",
+  BOU: "Vitality Stadium",
+  BRE: "Gtech Community Stadium",
+  BHA: "Amex Stadium",
+  CHE: "Stamford Bridge",
+  COV: "Coventry Building Society Arena",
+  CRY: "Selhurst Park",
+  EVE: "Hill Dickinson Stadium",
+  FUL: "Craven Cottage",
+  HUL: "MKM Stadium",
+  IPS: "Portman Road",
+  LEE: "Elland Road",
+  LIV: "Anfield",
+  MCI: "Etihad Stadium",
+  MUN: "Old Trafford",
+  NEW: "St James' Park",
+  NFO: "The City Ground",
+  TOT: "Tottenham Hotspur Stadium",
+  SUN: "Stadium of Light",
+};
+
+export function stadiumOf(tla: string): string | undefined {
+  return STADIUMS[tla];
+}

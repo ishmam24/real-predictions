@@ -1,155 +1,142 @@
 "use client";
-// A single fixture: enter a predicted scoreline, pick Player of the Match,
-// and (after results settle) see the points earned with a breakdown.
+// ============================================================================
+// Broadcast scoreboard fixture card — one match rendered like a TV matchday
+// graphic: matchup, editable score boxes (the leading side lit in signal
+// lime), and a Player-of-the-Match footer that expands the squad picker.
+// Predictions autosave to the store on every change. When `readOnly` (after
+// the deadline) the same card renders locked, showing the final result and
+// points earned once the fixture has been settled.
+// ============================================================================
 import { useState } from "react";
 import type { Fixture } from "@/lib/types";
 import { teamById, squadFor, playerById } from "@/lib/mock-data";
+import { stadiumOf } from "@/lib/football-meta";
 import { useStore } from "@/lib/store";
 import { TeamBadge } from "./TeamBadge";
 import { PotmPicker } from "./PotmPicker";
 
-export function FixtureCard({ fixture, locked }: { fixture: Fixture; locked: boolean }) {
+export function FixtureCard({
+  fixture,
+  index,
+  total,
+  readOnly = false,
+}: {
+  fixture: Fixture;
+  index: number;
+  total: number;
+  readOnly?: boolean;
+}) {
   const { predictions, savePrediction, scoreFor, results } = useStore();
   const home = teamById(fixture.homeTeamId);
   const away = teamById(fixture.awayTeamId);
   const existing = predictions[fixture.id];
 
-  const [homeScore, setHomeScore] = useState<string>(
-    existing?.homeScore != null ? String(existing.homeScore) : ""
-  );
-  const [awayScore, setAwayScore] = useState<string>(
-    existing?.awayScore != null ? String(existing.awayScore) : ""
-  );
+  const [h, setH] = useState(existing?.homeScore != null ? String(existing.homeScore) : "");
+  const [a, setA] = useState(existing?.awayScore != null ? String(existing.awayScore) : "");
   const [potm, setPotm] = useState<string | null>(existing?.potmPlayerId ?? null);
-  const [potmOpen, setPotmOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const score = scoreFor(fixture.id);
   const settled = !!results[fixture.id];
 
   function commit(next: Partial<{ h: string; a: string; p: string | null }>) {
-    const h = next.h ?? homeScore;
-    const a = next.a ?? awayScore;
-    const p = next.p !== undefined ? next.p : potm;
+    const nh = next.h ?? h;
+    const na = next.a ?? a;
+    const np = next.p !== undefined ? next.p : potm;
     savePrediction({
       fixtureId: fixture.id,
-      homeScore: h === "" ? null : Number(h),
-      awayScore: a === "" ? null : Number(a),
-      potmPlayerId: p,
+      homeScore: nh === "" ? null : Number(nh),
+      awayScore: na === "" ? null : Number(na),
+      potmPlayerId: np,
     });
   }
 
-  const selectedPlayer = potm ? playerById(potm) : null;
+  const hn = h === "" ? null : Number(h);
+  const an = a === "" ? null : Number(a);
+  const homeLead = hn != null && an != null && hn > an;
+  const awayLead = hn != null && an != null && an > hn;
+
+  const potmName = potm ? playerById(potm)?.name : null;
   const kickoff = new Date(fixture.kickoff).toLocaleString(undefined, {
     weekday: "short", hour: "2-digit", minute: "2-digit",
   });
+  const venue = stadiumOf(home.tla); // home team plays at their own ground
 
   return (
-    <div className="card p-4">
-      <div className="flex items-center justify-between text-xs mb-3" style={{ color: "var(--rp-muted)" }}>
-        <span>{kickoff}</span>
-        {settled && score && (
-          <span
-            className="font-bold px-2 py-0.5 rounded-full"
-            style={{ background: "var(--rp-mint)", color: "#04231a" }}
-          >
-            +{score.total} pts
-          </span>
+    <div className="rp-fx">
+      <div className="rp-fx__meta">
+        <span className="pill">{venue ? `${kickoff} · ${venue}` : kickoff}</span>
+        {settled && score ? (
+          <span className="pill pts">+{score.total} PTS</span>
+        ) : (
+          <span className="pill">Tie {index + 1} of {total}</span>
         )}
       </div>
 
-      {/* Scoreline row */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <TeamBadge team={home} />
-          <span className="font-semibold truncate">{home.name}</span>
+      <div className="rp-fx__core">
+        <div className="rp-fx__side">
+          <TeamBadge team={home} size={34} />
+          <span className="rp-display nm">{home.name}</span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="rp-scores">
           <input
-            className="score-input w-11 h-12 text-center text-xl font-bold rounded-xl"
-            style={{ background: "var(--rp-surface-2)", border: "1px solid var(--rp-border)", color: "var(--rp-text)" }}
+            aria-label={`${home.name} score`}
+            className={`rp-sbox rp-num score-input ${homeLead ? "lead" : ""}`}
             inputMode="numeric" type="number" min={0} placeholder="–"
-            value={homeScore} disabled={locked}
-            onChange={(e) => { setHomeScore(e.target.value); commit({ h: e.target.value }); }}
+            value={h} disabled={readOnly}
+            onChange={(e) => { setH(e.target.value); commit({ h: e.target.value }); }}
           />
-          <span style={{ color: "var(--rp-muted)" }}>:</span>
+          <span className="colon">:</span>
           <input
-            className="score-input w-11 h-12 text-center text-xl font-bold rounded-xl"
-            style={{ background: "var(--rp-surface-2)", border: "1px solid var(--rp-border)", color: "var(--rp-text)" }}
+            aria-label={`${away.name} score`}
+            className={`rp-sbox rp-num score-input ${awayLead ? "lead" : ""}`}
             inputMode="numeric" type="number" min={0} placeholder="–"
-            value={awayScore} disabled={locked}
-            onChange={(e) => { setAwayScore(e.target.value); commit({ a: e.target.value }); }}
+            value={a} disabled={readOnly}
+            onChange={(e) => { setA(e.target.value); commit({ a: e.target.value }); }}
           />
         </div>
 
-        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-          <span className="font-semibold truncate text-right">{away.name}</span>
-          <TeamBadge team={away} />
+        <div className="rp-fx__side away">
+          <TeamBadge team={away} size={34} />
+          <span className="rp-display nm">{away.name}</span>
         </div>
       </div>
 
-      {/* Actual result, once settled */}
+      {/* Final result once the fixture is settled. */}
       {settled && (
-        <div className="text-center text-xs mt-2" style={{ color: "var(--rp-muted)" }}>
-          Final: {results[fixture.id].homeScore}–{results[fixture.id].awayScore}
+        <div className="text-center text-xs pb-2" style={{ color: "var(--rp-muted)" }}>
+          Final {results[fixture.id].homeScore}–{results[fixture.id].awayScore}
           {results[fixture.id].potmPlayerId && (
             <> · POTM {playerById(results[fixture.id].potmPlayerId!)?.name}</>
           )}
         </div>
       )}
 
-      {/* POTM picker */}
-      <div className="mt-3">
-        <button
-          type="button"
-          disabled={locked}
-          onClick={() => setPotmOpen((o) => !o)}
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm"
-          style={{ background: "var(--rp-surface-2)", border: "1px solid var(--rp-border)" }}
-        >
-          <span style={{ color: "var(--rp-muted)" }}>⭐ Player of the Match</span>
-          <span className="font-semibold flex items-center gap-1">
-            {selectedPlayer ? selectedPlayer.name : "Pick"}
-            <span style={{ color: "var(--rp-muted)" }}>{potmOpen ? "▲" : "▼"}</span>
-          </span>
-        </button>
+      <button
+        type="button"
+        disabled={readOnly}
+        onClick={() => setPickerOpen((o) => !o)}
+        className={`rp-fx__foot ${potmName ? "" : "empty"}`}
+      >
+        <span className="star">★</span>
+        <span className="who">{potmName ?? "Add Player of the Match"}</span>
+        {potmName && <span className="pts">+2 PTS</span>}
+        {!readOnly && <span className="act">{pickerOpen ? "Close" : potmName ? "Change" : "Pick"}</span>}
+      </button>
 
-        {potmOpen && !locked && (
-          <div className="mt-2">
-            <PotmPicker
-              homeTeam={home}
-              awayTeam={away}
-              homeSquad={squadFor(home.id)}
-              awaySquad={squadFor(away.id)}
-              selectedPlayerId={potm}
-              onSelect={(pid) => { setPotm(pid); commit({ p: pid }); setPotmOpen(false); }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Points breakdown after settling */}
-      {settled && score && (
-        <div className="flex gap-2 mt-3 text-xs">
-          <Chip label="Result" value={score.result} />
-          <Chip label="POTM" value={score.potm} />
+      {pickerOpen && !readOnly && (
+        <div className="rp-picker">
+          <PotmPicker
+            homeTeam={home}
+            awayTeam={away}
+            homeSquad={squadFor(home.id)}
+            awaySquad={squadFor(away.id)}
+            selectedPlayerId={potm}
+            onSelect={(pid) => { setPotm(pid); commit({ p: pid }); setPickerOpen(false); }}
+          />
         </div>
       )}
     </div>
-  );
-}
-
-function Chip({ label, value }: { label: string; value: number }) {
-  return (
-    <span
-      className="px-2 py-1 rounded-lg font-medium"
-      style={{
-        background: value > 0 ? "var(--rp-mint)" : "var(--rp-surface-2)",
-        color: value > 0 ? "#04231a" : "var(--rp-muted)",
-        border: "1px solid var(--rp-border)",
-      }}
-    >
-      {label} +{value}
-    </span>
   );
 }
