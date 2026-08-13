@@ -13,7 +13,7 @@ import { useStore, currentGameweek } from "@/lib/store";
 import { FixtureCard } from "./FixtureCard";
 
 export function PredictionBoard() {
-  const { predictions, submitGameweek, hydrated } = useStore();
+  const { predictions, submitGameweek, hydrated, saveError } = useStore();
 
   const fixtures = allFixtures.filter((f) => f.gameweekId === currentGameweek.id);
   const total = fixtures.length;
@@ -51,8 +51,12 @@ export function PredictionBoard() {
   const submittedUnchanged = submittedKey !== null && submittedKey === currentKey;
 
   async function handleSubmit() {
-    await submitGameweek(currentGameweek.id);
-    setSubmittedKey(currentKey);
+    try {
+      await submitGameweek(currentGameweek.id);
+      setSubmittedKey(currentKey);
+    } catch {
+      // The store surfaces the failure via saveError; keep the button active.
+    }
   }
 
   return (
@@ -63,6 +67,13 @@ export function PredictionBoard() {
           <span className="s">Predict all {total} · {done} done</span>
         )}
       </div>
+
+      {saveError && (
+        <div className="rp-banner" style={{ color: "#ff6b6b" }}>
+          <span>⚠️</span>
+          <span>{saveError}</span>
+        </div>
+      )}
 
       {submittedUnchanged && !deadlinePassed && (
         <div className="rp-banner">
