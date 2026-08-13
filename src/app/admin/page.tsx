@@ -17,7 +17,25 @@ import { PotmPicker } from "@/components/PotmPicker";
 import { GameweekBuilder } from "@/components/GameweekBuilder";
 
 export default function AdminPage() {
+  const { profile } = useStore();
   const gwFixtures = fixtures.filter((f) => f.gameweekId === currentGameweek.id);
+
+  if (profile && !profile.isAdmin) {
+    return (
+      <main className="px-4 pt-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Link href="/profile" style={{ color: "var(--rp-muted)" }}>←</Link>
+          <h1 className="text-2xl font-extrabold">🛠️ Admin</h1>
+        </div>
+        <div className="card p-6 mt-3 text-center">
+          <p className="font-semibold mb-1">Admins only</p>
+          <p className="text-sm" style={{ color: "var(--rp-muted)" }}>
+            Your account doesn&apos;t have admin access.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="px-4 pt-5">

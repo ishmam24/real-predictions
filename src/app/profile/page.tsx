@@ -22,10 +22,12 @@ export default function ProfilePage() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Link href="/admin" className="card p-4 flex items-center justify-between">
-          <span className="font-semibold">🛠️ Admin panel</span>
-          <span style={{ color: "var(--rp-muted)" }}>Set fixtures & results →</span>
-        </Link>
+        {profile.isAdmin && (
+          <Link href="/admin" className="card p-4 flex items-center justify-between">
+            <span className="font-semibold">🛠️ Admin panel</span>
+            <span style={{ color: "var(--rp-muted)" }}>Set fixtures & results →</span>
+          </Link>
+        )}
         <button
           onClick={signOut}
           className="card p-4 text-left font-semibold"
@@ -34,10 +36,6 @@ export default function ProfilePage() {
           Sign out
         </button>
       </div>
-
-      <p className="text-center text-xs mt-6" style={{ color: "var(--rp-muted)" }}>
-        Prototype build · data saved locally in your browser
-      </p>
     </main>
   );
 }

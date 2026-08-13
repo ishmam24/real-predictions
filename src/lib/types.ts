@@ -56,7 +56,28 @@ export type UserProfile = {
   id: string;
   displayName: string;
   favouriteTeamId: string | null;
-  avatarEmoji: string;          // simple emoji avatar for the prototype
+  avatarEmoji: string;          // simple emoji avatar chosen at onboarding
+  isAdmin: boolean;             // unlocks the admin panel
+  onboarded: boolean;           // finished profile setup (name/team/avatar)
+};
+
+// A private mini-league the player owns or has joined.
+export type League = {
+  id: string;
+  name: string;
+  code: string;                 // invite code, e.g. "PL7K2Q"
+  members: number;
+  isOwner: boolean;
+};
+
+// One row of a per-league standings table.
+export type LeagueStanding = {
+  userId: string;
+  displayName: string;
+  avatarEmoji: string;
+  favouriteTeamId: string | null;
+  totalPoints: number;
+  rank: number;
 };
 
 export type LeaderboardRow = {

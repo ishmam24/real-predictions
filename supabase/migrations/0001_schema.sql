@@ -22,9 +22,11 @@ create table public.profiles (
   id                uuid primary key references auth.users(id) on delete cascade,
   display_name      text not null,
   -- FK to teams is added after the teams table is created (see below).
-  favourite_team_id uuid,
+  favourite_team_id text,
   avatar_url        text,
+  avatar_emoji      text,                     -- simple emoji avatar chosen at onboarding
   is_admin          boolean not null default false,
+  onboarded         boolean not null default false,  -- finished profile setup (name/team/avatar)
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );
@@ -35,11 +37,12 @@ create table public.profiles (
 -- external_id maps a row to that API's team id.
 -- ----------------------------------------------------------------------------
 create table public.teams (
-  id          uuid primary key default gen_random_uuid(),
-  external_id integer unique,              -- football-data.org team id
+  id          text primary key,            -- stable slug, e.g. "ars" (matches the app's ids)
+  external_id integer unique,              -- football-data.org / FPL team id
   name        text not null,               -- e.g. "Arsenal FC"
   short_name  text not null,               -- e.g. "Arsenal"
   tla         text,                        -- three-letter abbr, e.g. "ARS"
+  color       text,                        -- brand colour (badge fallback / accents)
   crest_url   text,                         -- club badge image
   created_at  timestamptz not null default now()
 );
@@ -57,9 +60,9 @@ alter table public.profiles
 -- Synced from football-data.org squads.
 -- ----------------------------------------------------------------------------
 create table public.players (
-  id          uuid primary key default gen_random_uuid(),
-  external_id integer unique,              -- football-data.org player id
-  team_id     uuid not null references public.teams(id) on delete cascade,
+  id          text primary key,            -- stable slug, e.g. "p452"
+  external_id integer unique,              -- football-data.org / FPL player id
+  team_id     text not null references public.teams(id) on delete cascade,
   name        text not null,
   position    text,
   created_at  timestamptz not null default now()
@@ -72,7 +75,7 @@ create table public.players (
 create type gameweek_status as enum ('draft', 'open', 'locked', 'completed');
 
 create table public.gameweeks (
-  id          uuid primary key default gen_random_uuid(),
+  id          text primary key,            -- stable slug, e.g. "gw1"
   number      integer not null unique,     -- Gameweek 1, 2, 3...
   title       text,                        -- optional label, e.g. "Opening Weekend"
   deadline    timestamptz not null,        -- predictions lock at this time
@@ -87,16 +90,16 @@ create table public.gameweeks (
 create type fixture_status as enum ('scheduled', 'in_play', 'finished');
 
 create table public.fixtures (
-  id            uuid primary key default gen_random_uuid(),
-  external_id   integer unique,            -- football-data.org match id
-  gameweek_id   uuid not null references public.gameweeks(id) on delete cascade,
-  home_team_id  uuid not null references public.teams(id),
-  away_team_id  uuid not null references public.teams(id),
+  id            text primary key,          -- stable slug, e.g. "f1"
+  external_id   integer unique,            -- football-data.org / FPL match id
+  gameweek_id   text not null references public.gameweeks(id) on delete cascade,
+  home_team_id  text not null references public.teams(id),
+  away_team_id  text not null references public.teams(id),
   kickoff_time  timestamptz not null,
   status        fixture_status not null default 'scheduled',
   home_score    integer,                   -- null until the match finishes
   away_score    integer,
-  potm_player_id uuid references public.players(id),  -- manual, null until entered
+  potm_player_id text references public.players(id),  -- manual, null until entered
   result_settled_at timestamptz,           -- set when scores+POTM finalize scoring
   created_at    timestamptz not null default now(),
   constraint different_teams check (home_team_id <> away_team_id)
@@ -111,10 +114,10 @@ create index fixtures_gameweek_idx on public.fixtures(gameweek_id);
 create table public.predictions (
   id                    uuid primary key default gen_random_uuid(),
   user_id               uuid not null references public.profiles(id) on delete cascade,
-  fixture_id            uuid not null references public.fixtures(id) on delete cascade,
+  fixture_id            text not null references public.fixtures(id) on delete cascade,
   predicted_home_score  integer not null check (predicted_home_score >= 0),
   predicted_away_score  integer not null check (predicted_away_score >= 0),
-  predicted_potm_player_id uuid references public.players(id),
+  predicted_potm_player_id text references public.players(id),
   points_awarded        integer,           -- null until settled; then 0..5
   points_breakdown      jsonb,             -- e.g. {"result":3,"potm":2} for transparency
   created_at            timestamptz not null default now(),

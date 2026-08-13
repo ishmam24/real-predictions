@@ -15,7 +15,7 @@ as $$
 $$;
 
 -- Helper: has the gameweek containing this fixture passed its deadline?
-create or replace function public.fixture_deadline_passed(p_fixture_id uuid)
+create or replace function public.fixture_deadline_passed(p_fixture_id text)
 returns boolean
 language sql stable security definer set search_path = public
 as $$
@@ -43,6 +43,12 @@ create policy "profiles readable by authenticated"
 create policy "update own profile"
   on public.profiles for update to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
+-- ...but only these columns. Column-level grants stop a user from patching
+-- their own is_admin flag (self-granting admin). Admin is granted out-of-band
+-- via the SQL editor (service role, which bypasses these grants).
+revoke update on public.profiles from authenticated;
+grant update (display_name, favourite_team_id, avatar_emoji, avatar_url, onboarded, updated_at)
+  on public.profiles to authenticated;
 
 -- ---- reference data: teams / players / gameweeks / fixtures ---------------
 -- Everyone signed in can read them; only admins can change them.
@@ -78,14 +84,27 @@ create policy "update own before deadline"
   using (user_id = auth.uid() and not public.fixture_deadline_passed(fixture_id))
   with check (user_id = auth.uid() and not public.fixture_deadline_passed(fixture_id));
 
+-- Helper: is this user a member of this league? SECURITY DEFINER so it reads
+-- league_members WITHOUT re-triggering RLS. This is essential — a membership
+-- check written directly inside league_members' own SELECT policy would query
+-- league_members again and cause infinite RLS recursion in Postgres.
+create or replace function public.is_league_member(p_league_id uuid, p_user_id uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (
+    select 1 from public.league_members
+    where league_id = p_league_id and user_id = p_user_id
+  );
+$$;
+
 -- ---- leagues --------------------------------------------------------------
 -- You can read a league if you created it or belong to it.
 create policy "read leagues you belong to"
   on public.leagues for select to authenticated
   using (
     created_by = auth.uid()
-    or exists (select 1 from public.league_members m
-               where m.league_id = id and m.user_id = auth.uid())
+    or public.is_league_member(id, auth.uid())
   );
 -- Anyone signed in can create a league (they become the owner).
 create policy "create leagues"
@@ -93,13 +112,11 @@ create policy "create leagues"
   with check (created_by = auth.uid());
 
 -- ---- league_members -------------------------------------------------------
--- You can see the member list of leagues you're in.
+-- You can see the member list of leagues you're in (via the definer helper,
+-- so this policy does not recurse into league_members).
 create policy "read members of my leagues"
   on public.league_members for select to authenticated
-  using (
-    exists (select 1 from public.league_members m
-            where m.league_id = league_members.league_id and m.user_id = auth.uid())
-  );
+  using (public.is_league_member(league_id, auth.uid()));
 -- You can add yourself to a league (join). Removing yourself = leave.
 create policy "join leagues"
   on public.league_members for insert to authenticated
@@ -107,3 +124,76 @@ create policy "join leagues"
 create policy "leave leagues"
   on public.league_members for delete to authenticated
   using (user_id = auth.uid());
+
+-- ---- league RPCs ----------------------------------------------------------
+-- Create a league and auto-join the creator. Generates a unique 6-char code
+-- (prefix "PL"). SECURITY DEFINER so the insert + self-membership happen even
+-- though the caller cannot yet read the freshly created rows.
+create or replace function public.create_league(p_name text)
+returns public.leagues
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_uid  uuid := auth.uid();
+  v_code text;
+  v_row  public.leagues;
+begin
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+  if length(trim(coalesce(p_name, ''))) < 2 then
+    raise exception 'League name too short';
+  end if;
+
+  -- retry until we land a unique code. Uses built-in random() (no pgcrypto,
+  -- which lives in the extensions schema and isn't on our search_path) over an
+  -- unambiguous alphabet (no 0/O/1/I).
+  loop
+    v_code := 'PL';
+    for i in 1..4 loop
+      v_code := v_code || substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+                                 floor(random() * 32)::int + 1, 1);
+    end loop;
+    exit when not exists (select 1 from public.leagues where code = v_code);
+  end loop;
+
+  insert into public.leagues (name, code, created_by)
+  values (trim(p_name), v_code, v_uid)
+  returning * into v_row;
+
+  insert into public.league_members (league_id, user_id)
+  values (v_row.id, v_uid);
+
+  return v_row;
+end;
+$$;
+
+-- Join a league by its invite code. SECURITY DEFINER so a non-member can look
+-- the league up by code (the read policy would otherwise hide it) and insert
+-- their own membership. Idempotent — re-joining is a no-op.
+create or replace function public.join_league_by_code(p_code text)
+returns public.leagues
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_row public.leagues;
+begin
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select * into v_row from public.leagues
+  where code = upper(trim(p_code));
+
+  if v_row is null then
+    raise exception 'No league found for that code';
+  end if;
+
+  insert into public.league_members (league_id, user_id)
+  values (v_row.id, v_uid)
+  on conflict (league_id, user_id) do nothing;
+
+  return v_row;
+end;
+$$;

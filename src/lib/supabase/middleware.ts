@@ -1,7 +1,11 @@
-// Keeps the Supabase auth session fresh on every request by rotating cookies.
-// Called from the root middleware.
+// Keeps the Supabase auth session fresh on every request (rotating cookies) and
+// guards routes: signed-out users are sent to /login; signed-in users are kept
+// off /login. Called from the root proxy (src/proxy.ts).
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+
+// Paths that must stay reachable without a session.
+const PUBLIC_PATHS = ["/login", "/auth"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -25,8 +29,35 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Touch the user to trigger a token refresh when needed.
-  await supabase.auth.getUser();
+  // IMPORTANT: getUser() refreshes the token when needed. Do not add logic
+  // between createServerClient and getUser or you can get random logouts.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+  // Signed out and asking for an app route -> send to /login.
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return copyCookies(response, NextResponse.redirect(url));
+  }
+
+  // Signed in but sitting on /login -> send to the game.
+  if (user && pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return copyCookies(response, NextResponse.redirect(url));
+  }
 
   return response;
+}
+
+// Carry the refreshed auth cookies from `from` onto a redirect response, so the
+// session isn't dropped when we redirect.
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((c) => to.cookies.set(c));
+  return to;
 }
