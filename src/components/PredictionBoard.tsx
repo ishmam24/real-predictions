@@ -2,18 +2,18 @@
 // ============================================================================
 // Prediction board — the "Broadcast Deck" Predict screen. Every fixture in the
 // gameweek is shown at once as a scoreboard card you fill in place; there's no
-// step-through wizard. Predictions autosave as you go, and "Confirm" locks them
-// in (still editable until the deadline). After the deadline the cards render
-// read-only via FixtureCard's `readOnly` mode.
+// step-through wizard. Predictions autosave as you go. "Confirm" submits them
+// and then stays DISABLED until you change a pick, at which point it re-enables
+// as "Update picks". After the deadline the cards render read-only.
 // ============================================================================
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Fixture } from "@/lib/types";
 import { fixtures as allFixtures } from "@/lib/mock-data";
 import { useStore, currentGameweek } from "@/lib/store";
 import { FixtureCard } from "./FixtureCard";
 
 export function PredictionBoard() {
-  const { predictions, submitGameweek, isSubmitted } = useStore();
+  const { predictions, submitGameweek, hydrated } = useStore();
 
   const fixtures = allFixtures.filter((f) => f.gameweekId === currentGameweek.id);
   const total = fixtures.length;
@@ -21,7 +21,6 @@ export function PredictionBoard() {
   // The deadline is far off in the prototype, so a one-shot read is fine here.
   const [now] = useState(() => Date.now());
   const deadlinePassed = now >= new Date(currentGameweek.deadline).getTime();
-  const submitted = isSubmitted(currentGameweek.id);
 
   const isComplete = (f: Fixture) => {
     const p = predictions[f.id];
@@ -29,6 +28,32 @@ export function PredictionBoard() {
   };
   const done = fixtures.filter(isComplete).length;
   const allComplete = done === total;
+
+  // A fingerprint of the current picks. When it differs from the last submitted
+  // fingerprint, the picks are "dirty" and the button re-enables.
+  const currentKey = JSON.stringify(
+    fixtures.map((f) => {
+      const p = predictions[f.id];
+      return p ? [p.homeScore ?? null, p.awayScore ?? null, p.potmPlayerId ?? null] : null;
+    })
+  );
+  const [submittedKey, setSubmittedKey] = useState<string | null>(null);
+
+  // If a full set of picks was already saved when the player arrives, treat it
+  // as already-submitted so the button starts disabled until they change one.
+  const inited = useRef(false);
+  useEffect(() => {
+    if (inited.current || !hydrated) return;
+    inited.current = true;
+    if (allComplete) setSubmittedKey(currentKey);
+  }, [hydrated, allComplete, currentKey]);
+
+  const submittedUnchanged = submittedKey !== null && submittedKey === currentKey;
+
+  async function handleSubmit() {
+    await submitGameweek(currentGameweek.id);
+    setSubmittedKey(currentKey);
+  }
 
   return (
     <div className="rp-board">
@@ -39,10 +64,10 @@ export function PredictionBoard() {
         )}
       </div>
 
-      {submitted && !deadlinePassed && (
+      {submittedUnchanged && !deadlinePassed && (
         <div className="rp-banner">
           <span>✅</span>
-          <span>Predictions in — edit any time before the deadline.</span>
+          <span>Predictions in — edit any pick to update before the deadline.</span>
         </div>
       )}
 
@@ -66,15 +91,17 @@ export function PredictionBoard() {
       {!deadlinePassed && (
         <button
           type="button"
-          onClick={() => submitGameweek(currentGameweek.id)}
-          disabled={!allComplete}
+          onClick={handleSubmit}
+          disabled={!allComplete || submittedUnchanged}
           className="btn-primary rp-confirm rp-display"
         >
-          {allComplete
-            ? submitted
-              ? "Update picks →"
-              : `Confirm ${total} picks →`
-            : `Predict all ${total} to confirm`}
+          {!allComplete
+            ? `Predict all ${total} to confirm`
+            : submittedUnchanged
+              ? "Picks submitted ✓"
+              : submittedKey
+                ? "Update picks →"
+                : `Confirm ${total} picks →`}
         </button>
       )}
     </div>
