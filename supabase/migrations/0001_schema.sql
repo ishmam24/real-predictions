@@ -21,7 +21,8 @@ create extension if not exists "pgcrypto";
 create table public.profiles (
   id                uuid primary key references auth.users(id) on delete cascade,
   display_name      text not null,
-  favourite_team_id uuid references public.teams(id),
+  -- FK to teams is added after the teams table is created (see below).
+  favourite_team_id uuid,
   avatar_url        text,
   is_admin          boolean not null default false,
   created_at        timestamptz not null default now(),

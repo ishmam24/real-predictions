@@ -14,7 +14,8 @@ const COLORS = {
   hul: "#F5A12D", ips: "#3A64A3", lee: "#1D428A", liv: "#C8102E", mci: "#6CABDD",
   mun: "#DA291C", new: "#241F20", nfo: "#DD0000", tot: "#132257", sun: "#EB172B",
 };
-const crest = (code) => `https://resources.premierleague.com/premierleague/badges/rb/t${code}.svg`;
+// PNG path covers every club (some promoted teams 403 on the SVG path).
+const crest = (code) => `https://resources.premierleague.com/premierleague/badges/70/t${code}.png`;
 
 const boot = await (await fetch(`${api}/bootstrap-static/`, { headers: UA })).json();
 

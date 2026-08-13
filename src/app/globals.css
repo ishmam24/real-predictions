@@ -1,34 +1,80 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Real Predictions — theme
-   Premier-League-inspired: deep purple base, magenta accent, mint for points.
-   Mobile-first: the whole app is designed as a phone-width column.
+   Real Predictions — "Broadcast Deck" theme
+   The look of a TV matchday graphic: dark is the hero, light fully supported.
+   Every screen reads these --rp-* tokens, so the whole app re-skins from here.
+
+   Accent rule: bright "signal lime" is used as a FILL (with dark text) for
+   primary actions + the leading score. As TEXT/borders we use --rp-accent,
+   which is lime on dark grounds and a deeper lime on light grounds so it
+   stays legible either way.
    ========================================================================== */
 :root {
-  --rp-bg: #f4f2f7;
+  /* Light (default) */
+  --rp-bg: #eef1f5;
   --rp-surface: #ffffff;
-  --rp-surface-2: #faf9fc;
-  --rp-border: #e7e2ef;
-  --rp-text: #1c1424;
-  --rp-muted: #6b6377;
-  --rp-purple: #37003c;
-  --rp-purple-2: #4a0d54;
-  --rp-accent: #ff2882;   /* PL magenta */
-  --rp-mint: #05c98a;     /* points / positive */
+  --rp-surface-2: #f5f8fa;
+  --rp-border: #dde3ea;
+  --rp-text: #0e151d;
+  --rp-muted: #5c6675;
+  --rp-accent: #3f7d00;        /* emphasis as text/border (deep lime) */
+  --rp-accent-soft: rgba(79, 148, 0, 0.14);
+  --rp-accent-fill: #c6ff3d;   /* signal lime — button + score fills */
+  --rp-on-accent: #14210a;     /* text sitting on a lime fill */
+  --rp-mint: #1e9e5f;          /* points / positive */
+  --rp-live: #e23b3b;
+  --rp-ground: #0b1017;        /* committed dark ground (onboarding hero) */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --rp-bg: #16101c;
-    --rp-surface: #201829;
-    --rp-surface-2: #271d33;
-    --rp-border: #33283f;
-    --rp-text: #f3eef8;
-    --rp-muted: #a99fb5;
-    --rp-purple: #2a002e;
-    --rp-purple-2: #3d0a45;
+    --rp-bg: #0b1017;
+    --rp-surface: #131b26;
+    --rp-surface-2: #0f1620;
+    --rp-border: #25313f;
+    --rp-text: #eef3f9;
+    --rp-muted: #8593a3;
+    --rp-accent: #c6ff3d;
+    --rp-accent-soft: rgba(198, 255, 61, 0.12);
+    --rp-accent-fill: #c6ff3d;
+    --rp-on-accent: #0c1206;
+    --rp-mint: #37e08a;
+    --rp-live: #ff4a4a;
+    --rp-ground: #0b1017;
   }
+}
+
+/* Explicit theme choice (set by the toggle) always wins over the OS setting. */
+:root[data-theme="light"] {
+  --rp-bg: #eef1f5;
+  --rp-surface: #ffffff;
+  --rp-surface-2: #f5f8fa;
+  --rp-border: #dde3ea;
+  --rp-text: #0e151d;
+  --rp-muted: #5c6675;
+  --rp-accent: #3f7d00;
+  --rp-accent-soft: rgba(79, 148, 0, 0.14);
+  --rp-accent-fill: #c6ff3d;
+  --rp-on-accent: #14210a;
+  --rp-mint: #1e9e5f;
+  --rp-live: #e23b3b;
+  --rp-ground: #0b1017;
+}
+:root[data-theme="dark"] {
+  --rp-bg: #0b1017;
+  --rp-surface: #131b26;
+  --rp-surface-2: #0f1620;
+  --rp-border: #25313f;
+  --rp-text: #eef3f9;
+  --rp-muted: #8593a3;
+  --rp-accent: #c6ff3d;
+  --rp-accent-soft: rgba(198, 255, 61, 0.12);
+  --rp-accent-fill: #c6ff3d;
+  --rp-on-accent: #0c1206;
+  --rp-mint: #37e08a;
+  --rp-live: #ff4a4a;
+  --rp-ground: #0b1017;
 }
 
 html, body {
@@ -41,20 +87,146 @@ body {
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
-/* The app renders inside a phone-width shell centred on larger screens. */
-.app-shell {
-  max-width: 480px;
-  margin: 0 auto;
-  min-height: 100dvh;
-  background: var(--rp-bg);
-  position: relative;
-  padding-bottom: 84px; /* room for the bottom nav */
+/* Scoreboard/display type — a condensed, uppercase treatment. Uses a system
+   condensed stack so there's no webfont dependency; swap in Saira/Bebas later. */
+.rp-display {
+  font-family: "Helvetica Neue", "Arial Narrow", system-ui, sans-serif;
+  font-stretch: condensed;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
+}
+.rp-num { font-variant-numeric: tabular-nums; }
+.rp-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rp-muted);
 }
 
+/* ==========================================================================
+   Responsive app shell — a web app, not a phone-locked column.
+   Mobile: single column + bottom tab bar.
+   Desktop (>=768px): sticky top nav; content centred with a comfortable max.
+   ========================================================================== */
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--rp-bg);
+}
+
+.app-main {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  flex: 1 0 auto;
+}
+
+/* Leave room for the fixed bottom nav on mobile only. */
+@media (max-width: 767px) {
+  .app-main { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+}
+
+/* Predict screen: a single column that gains a persistent standings rail on
+   wide screens — the "broadcast bug" beside the pitch. */
+.rp-rail-layout { display: block; }
+@media (min-width: 1024px) {
+  .rp-rail-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 20px;
+    padding: 20px;
+    align-items: start;
+  }
+}
+
+.rp-rail { display: none; }
+@media (min-width: 1024px) {
+  .rp-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 84px;
+  }
+}
+
+/* Top navigation — desktop/tablet only. */
+.rp-topnav { display: none; }
+@media (min-width: 768px) {
+  .rp-topnav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--rp-border);
+    background: var(--rp-surface-2);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+}
+
+/* ==========================================================================
+   Building blocks
+   ========================================================================== */
 .card {
   background: var(--rp-surface);
   border: 1px solid var(--rp-border);
-  border-radius: 18px;
+  border-radius: 10px;
+}
+
+.panel {
+  background: var(--rp-surface);
+  border: 1px solid var(--rp-border);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+/* Primary action — signal-lime fill with dark text (works on both themes). */
+.btn-primary {
+  background: var(--rp-accent-fill);
+  color: var(--rp-on-accent);
+  border: none;
+}
+.btn-primary:disabled { opacity: 0.4; }
+
+/* Secondary / ghost action. */
+.btn-ghost {
+  background: var(--rp-surface-2);
+  border: 1px solid var(--rp-border);
+  color: var(--rp-text);
+}
+
+/* Standings rows in the rail. */
+.rp-srow {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.rp-srow[data-me="true"] {
+  background: var(--rp-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--rp-accent-soft);
+}
+
+/* Progress bar. */
+.rp-progress {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--rp-surface-2);
+  border: 1px solid var(--rp-border);
+  overflow: hidden;
+  margin: 8px 0 7px;
+}
+.rp-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--rp-accent-fill);
 }
 
 /* Number input: hide spinners, keep it big and tappable. */
@@ -66,4 +238,10 @@ body {
 .score-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* Visible keyboard focus for accessibility. */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--rp-accent);
+  outline-offset: 2px;
 }

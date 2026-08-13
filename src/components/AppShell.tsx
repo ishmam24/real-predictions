@@ -1,8 +1,10 @@
 "use client";
-// Wraps every page in the phone-width shell. If there's no signed-in profile
-// yet, it shows the onboarding flow instead of the app.
+// Responsive shell. Signed-out users see onboarding; signed-in users get the
+// app with a desktop top nav, a centred content column, and a mobile bottom
+// tab bar.
 import { useStore } from "@/lib/store";
 import { BottomNav } from "./BottomNav";
+import { TopNav } from "./TopNav";
 import { Onboarding } from "./Onboarding";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -13,7 +15,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Wait for localStorage to load so we don't flash the wrong screen. */}
       {!hydrated ? null : profile ? (
         <>
-          {children}
+          <TopNav />
+          <div className="app-main">{children}</div>
           <BottomNav />
         </>
       ) : (

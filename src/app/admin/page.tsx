@@ -97,8 +97,7 @@ function AdminFixtureRow({ fixtureId }: { fixtureId: string }) {
         <button
           disabled={!canSettle}
           onClick={() => setResult(fixtureId, Number(h), Number(a), potm)}
-          className="flex-1 py-2.5 rounded-xl font-semibold text-white disabled:opacity-40"
-          style={{ background: "var(--rp-accent)" }}>
+          className="btn-primary flex-1 py-2.5 rounded-xl font-semibold">
           {settled ? "Update result" : "Settle result"}
         </button>
         {settled && (

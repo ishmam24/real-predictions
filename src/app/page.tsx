@@ -1,12 +1,16 @@
 "use client";
-// Predictions screen — a Google-Forms-style wizard: one game per page,
-// then a review page before submitting.
+// Predictions screen — the wizard in the main column, with a persistent
+// standings rail alongside it on wide screens.
 import { PredictionWizard } from "@/components/PredictionWizard";
+import { StandingsRail } from "@/components/StandingsRail";
 
 export default function PredictionsPage() {
   return (
-    <main>
-      <PredictionWizard />
-    </main>
+    <div className="rp-rail-layout">
+      <main>
+        <PredictionWizard />
+      </main>
+      <StandingsRail />
+    </div>
   );
 }

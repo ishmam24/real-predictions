@@ -25,12 +25,12 @@ export function Onboarding() {
   const canFinish = displayName.trim().length >= 2;
 
   return (
-    <div className="min-h-dvh flex flex-col px-6 py-10" style={{ background: "var(--rp-purple)" }}>
+    <div className="min-h-dvh flex flex-col px-6 py-10" style={{ background: "var(--rp-ground)" }}>
       {/* Brand header */}
       <div className="text-center mb-8">
         <div className="text-5xl mb-3">⚽️</div>
-        <h1 className="text-2xl font-extrabold text-white">Real Predictions</h1>
-        <p className="text-sm mt-1" style={{ color: "#d9b8e0" }}>
+        <h1 className="rp-display text-3xl font-extrabold text-white">Real Predictions</h1>
+        <p className="text-sm mt-1" style={{ color: "#9fb0c2" }}>
           Predict the Premier League. Beat your mates.
         </p>
       </div>
@@ -52,8 +52,7 @@ export function Onboarding() {
           </button>
           <button
             onClick={() => setStep(2)}
-            className="w-full py-3 rounded-xl font-semibold text-white"
-            style={{ background: "var(--rp-accent)" }}
+            className="btn-primary w-full py-3 rounded-xl font-semibold"
           >
             Continue with Email
           </button>
@@ -128,8 +127,7 @@ export function Onboarding() {
           <button
             disabled={!canFinish}
             onClick={() => onboard({ displayName: displayName.trim(), favouriteTeamId, avatarEmoji })}
-            className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-40"
-            style={{ background: "var(--rp-accent)" }}
+            className="btn-primary w-full py-3 rounded-xl font-semibold"
           >
             Enter the game →
           </button>

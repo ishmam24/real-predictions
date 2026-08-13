@@ -137,7 +137,7 @@ function FixtureStep({
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--rp-border)" }}>
           <div className="h-full rounded-full transition-all"
-            style={{ width: `${((index + 1) / (total + 1)) * 100}%`, background: "var(--rp-accent)" }} />
+            style={{ width: `${((index + 1) / (total + 1)) * 100}%`, background: "var(--rp-accent-fill)" }} />
         </div>
       </div>
 
@@ -188,8 +188,7 @@ function FixtureStep({
           </button>
         )}
         <button onClick={onNext} disabled={!canProceed}
-          className="flex-1 py-3 rounded-xl font-semibold text-white disabled:opacity-40"
-          style={{ background: "var(--rp-accent)" }}>
+          className="btn-primary flex-1 py-3 rounded-xl font-semibold">
           {canProceed ? (isLast ? "Review picks →" : "Next game →") : "Enter a score to continue"}
         </button>
       </div>
@@ -252,8 +251,7 @@ function ReviewPage({
           ← Back
         </button>
         <button onClick={onSubmit} disabled={!allComplete}
-          className="flex-1 py-3 rounded-xl font-semibold text-white disabled:opacity-40"
-          style={{ background: "var(--rp-accent)" }}>
+          className="btn-primary flex-1 py-3 rounded-xl font-semibold">
           Submit predictions
         </button>
       </div>
@@ -280,8 +278,7 @@ function SubmittedSummary({ fixtures, onEdit }: { fixtures: Fixture[]; onEdit: (
       <PicksList fixtures={fixtures} predictions={predictions} />
 
       <button onClick={onEdit}
-        className="w-full mt-6 py-3 rounded-xl font-semibold text-white"
-        style={{ background: "var(--rp-accent)" }}>
+        className="btn-primary w-full mt-6 py-3 rounded-xl font-semibold">
         Edit predictions
       </button>
     </div>
