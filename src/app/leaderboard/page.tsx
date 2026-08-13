@@ -14,6 +14,12 @@ export default function LeaderboardPage() {
         Global standings — every player, ranked by total points.
       </p>
 
+      {rows.length === 0 && (
+        <div className="card p-6 text-center" style={{ color: "var(--rp-muted)" }}>
+          No players on the board yet — be the first to make a prediction.
+        </div>
+      )}
+
       <div className="card overflow-hidden">
         {rows.map((r, i) => {
           const isMe = r.displayName.endsWith("(you)");

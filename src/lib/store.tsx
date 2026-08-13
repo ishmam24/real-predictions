@@ -1,14 +1,24 @@
 "use client";
 // ============================================================================
-// Prototype store: keeps the current user, their predictions, and (for the
-// admin demo) match results in the browser's localStorage so everything works
-// without a backend. Mirrors the DB scoring so points feel real.
-// When Supabase is wired in, this file becomes thin wrappers around real
-// queries; the components using it won't change.
+// Store: the app's data layer, backed by Supabase.
+//
+// Reference data (teams, players, fixtures, the current gameweek) stays in
+// mock-data.ts — it is static per season and the database is SEEDED from the
+// exact same source (scripts/generate-seed-sql.mjs), so the ids line up and the
+// fixture/player foreign keys on predictions resolve. Everything the *user*
+// generates — their profile, predictions, settled results, the leaderboard, and
+// private leagues — lives in Supabase and is loaded here.
+//
+// The hook surface (predictions/results maps, scoreFor, leaderboard(), etc.) is
+// deliberately unchanged from the prototype so the screen components did not
+// have to change.
 // ============================================================================
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import type { Prediction, UserProfile, LeaderboardRow } from "./types";
-import { rivalRows, fixtures as baseFixtures, currentGameweek } from "./mock-data";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import type { Prediction, UserProfile, LeaderboardRow, League, LeagueStanding } from "./types";
+import { fixtures as baseFixtures, currentGameweek } from "./mock-data";
+import { createClient } from "./supabase/client";
+
+const DEFAULT_AVATAR = "⚽";
 
 type ResultsMap = Record<
   string,
@@ -20,122 +30,347 @@ type Store = {
   profile: UserProfile | null;
   predictions: PredictionsMap;
   results: ResultsMap;
-  submittedGameweeks: string[];
+  leagues: League[];
   hydrated: boolean;
-  onboard: (p: Omit<UserProfile, "id">) => void;
-  signOut: () => void;
-  savePrediction: (p: Prediction) => void;
-  submitGameweek: (gameweekId: string) => void;
+  onboard: (p: {
+    displayName: string;
+    favouriteTeamId: string | null;
+    avatarEmoji: string;
+    leagueCode?: string;
+  }) => Promise<void>;
+  signOut: () => Promise<void>;
+  savePrediction: (p: Prediction) => Promise<void>;
+  submitGameweek: (gameweekId: string) => Promise<void>;
   isSubmitted: (gameweekId: string) => boolean;
-  setResult: (fixtureId: string, homeScore: number, awayScore: number, potmPlayerId: string | null) => void;
-  clearResult: (fixtureId: string) => void;
+  setResult: (
+    fixtureId: string,
+    homeScore: number,
+    awayScore: number,
+    potmPlayerId: string | null
+  ) => Promise<void>;
+  clearResult: (fixtureId: string) => Promise<void>;
   scoreFor: (fixtureId: string) => { result: number; potm: number; total: number } | null;
   myTotalPoints: () => number;
   leaderboard: () => LeaderboardRow[];
+  createLeague: (name: string) => Promise<League>;
+  joinLeague: (code: string) => Promise<League>;
+  leagueLeaderboard: (leagueId: string) => Promise<LeagueStanding[]>;
 };
 
 const StoreContext = createContext<Store | null>(null);
 
-const KEYS = {
-  profile: "rp_profile",
-  predictions: "rp_predictions",
-  results: "rp_results",
-  submitted: "rp_submitted",
-};
-
-function load<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 const outcome = (h: number, a: number) => Math.sign(h - a);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const supabase = useMemo(() => createClient(), []);
+
+  const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [predictions, setPredictions] = useState<PredictionsMap>({});
   const [results, setResults] = useState<ResultsMap>({});
-  const [submittedGameweeks, setSubmittedGameweeks] = useState<string[]>([]);
+  const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardRow[]>([]);
+  const [leagues, setLeagues] = useState<League[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Load from localStorage once, after mount. We intentionally render the empty
-  // state on the server/first paint and then hydrate from storage on the client
-  // to avoid an SSR/client mismatch — a deliberate one-time sync from an external
-  // store, so the set-state-in-effect rule doesn't apply here.
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setProfile(load<UserProfile | null>(KEYS.profile, null));
-    setPredictions(load<PredictionsMap>(KEYS.predictions, {}));
-    setResults(load<ResultsMap>(KEYS.results, {}));
-    setSubmittedGameweeks(load<string[]>(KEYS.submitted, []));
-    setHydrated(true);
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, []);
+  // ---- loaders -------------------------------------------------------------
+  const loadProfile = useCallback(
+    async (uid: string): Promise<UserProfile | null> => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, favourite_team_id, avatar_emoji, is_admin, onboarded")
+        .eq("id", uid)
+        .single();
+      if (!data) return null;
+      return {
+        id: data.id,
+        displayName: data.display_name,
+        favouriteTeamId: data.favourite_team_id,
+        avatarEmoji: data.avatar_emoji ?? DEFAULT_AVATAR,
+        isAdmin: data.is_admin,
+        onboarded: data.onboarded,
+      };
+    },
+    [supabase]
+  );
 
-  useEffect(() => {
-    if (hydrated) window.localStorage.setItem(KEYS.profile, JSON.stringify(profile));
-  }, [profile, hydrated]);
-  useEffect(() => {
-    if (hydrated) window.localStorage.setItem(KEYS.predictions, JSON.stringify(predictions));
-  }, [predictions, hydrated]);
-  useEffect(() => {
-    if (hydrated) window.localStorage.setItem(KEYS.results, JSON.stringify(results));
-  }, [results, hydrated]);
-  useEffect(() => {
-    if (hydrated) window.localStorage.setItem(KEYS.submitted, JSON.stringify(submittedGameweeks));
-  }, [submittedGameweeks, hydrated]);
+  const loadPredictions = useCallback(
+    async (uid: string) => {
+      const { data } = await supabase
+        .from("predictions")
+        .select("fixture_id, predicted_home_score, predicted_away_score, predicted_potm_player_id")
+        .eq("user_id", uid);
+      const map: PredictionsMap = {};
+      (data ?? []).forEach((r) => {
+        map[r.fixture_id] = {
+          fixtureId: r.fixture_id,
+          homeScore: r.predicted_home_score,
+          awayScore: r.predicted_away_score,
+          potmPlayerId: r.predicted_potm_player_id,
+        };
+      });
+      setPredictions(map);
+    },
+    [supabase]
+  );
 
-  const onboard = useCallback((p: Omit<UserProfile, "id">) => {
-    setProfile({ id: "me", ...p });
-  }, []);
+  // Settled results, read off the fixtures table (any fixture that has a score).
+  const loadResults = useCallback(async () => {
+    const { data } = await supabase
+      .from("fixtures")
+      .select("id, home_score, away_score, potm_player_id")
+      .not("home_score", "is", null);
+    const map: ResultsMap = {};
+    (data ?? []).forEach((r) => {
+      map[r.id] = {
+        homeScore: r.home_score,
+        awayScore: r.away_score,
+        potmPlayerId: r.potm_player_id,
+      };
+    });
+    setResults(map);
+  }, [supabase]);
 
-  const signOut = useCallback(() => {
+  const loadLeaderboard = useCallback(
+    async (uid: string | null) => {
+      const { data } = await supabase
+        .from("leaderboard")
+        .select("user_id, display_name, avatar_emoji, favourite_team_id, total_points, exact_scores, rank")
+        .order("rank", { ascending: true });
+      const rows: LeaderboardRow[] = (data ?? []).map((r) => ({
+        userId: r.user_id,
+        displayName: r.user_id === uid ? `${r.display_name} (you)` : r.display_name,
+        avatarEmoji: r.avatar_emoji ?? DEFAULT_AVATAR,
+        favouriteTeamId: r.favourite_team_id,
+        totalPoints: Number(r.total_points),
+        exactScores: Number(r.exact_scores),
+        rank: Number(r.rank),
+      }));
+      setLeaderboardRows(rows);
+    },
+    [supabase]
+  );
+
+  const loadLeagues = useCallback(
+    async (uid: string) => {
+      // My memberships, with the league embedded via the FK.
+      const { data: memberships } = await supabase
+        .from("league_members")
+        .select("league_id, leagues(id, name, code, created_by)")
+        .eq("user_id", uid);
+
+      const myLeagues = (memberships ?? [])
+        .map((m) => m.leagues as unknown as { id: string; name: string; code: string; created_by: string } | null)
+        .filter((l): l is { id: string; name: string; code: string; created_by: string } => !!l);
+
+      const ids = myLeagues.map((l) => l.id);
+      // Member counts for those leagues (RLS lets me read members of my leagues).
+      const counts: Record<string, number> = {};
+      if (ids.length) {
+        const { data: allMembers } = await supabase
+          .from("league_members")
+          .select("league_id")
+          .in("league_id", ids);
+        (allMembers ?? []).forEach((m) => {
+          counts[m.league_id] = (counts[m.league_id] ?? 0) + 1;
+        });
+      }
+
+      setLeagues(
+        myLeagues.map((l) => ({
+          id: l.id,
+          name: l.name,
+          code: l.code,
+          members: counts[l.id] ?? 1,
+          isOwner: l.created_by === uid,
+        }))
+      );
+    },
+    [supabase]
+  );
+
+  const loadAll = useCallback(
+    async (uid: string) => {
+      const prof = await loadProfile(uid);
+      setProfile(prof);
+      await Promise.all([
+        loadPredictions(uid),
+        loadResults(),
+        loadLeaderboard(uid),
+        loadLeagues(uid),
+      ]);
+    },
+    [loadProfile, loadPredictions, loadResults, loadLeaderboard, loadLeagues]
+  );
+
+  const clearAll = useCallback(() => {
     setProfile(null);
     setPredictions({});
-    setSubmittedGameweeks([]);
-    window.localStorage.removeItem(KEYS.profile);
-    window.localStorage.removeItem(KEYS.predictions);
-    window.localStorage.removeItem(KEYS.submitted);
+    setResults({});
+    setLeaderboardRows([]);
+    setLeagues([]);
   }, []);
 
-  const savePrediction = useCallback((p: Prediction) => {
-    setPredictions((prev) => ({ ...prev, [p.fixtureId]: p }));
-  }, []);
+  // ---- auth lifecycle ------------------------------------------------------
+  useEffect(() => {
+    let active = true;
 
-  const submitGameweek = useCallback((gameweekId: string) => {
-    setSubmittedGameweeks((prev) => (prev.includes(gameweekId) ? prev : [...prev, gameweekId]));
-  }, []);
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const uid = session?.user?.id ?? null;
+      if (!active) return;
+      setUserId(uid);
+      if (uid) await loadAll(uid);
+      if (active) setHydrated(true);
+    })();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null;
+      setUserId(uid);
+      if (uid) {
+        loadAll(uid);
+      } else {
+        clearAll();
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase, loadAll, clearAll]);
+
+  // ---- profile / auth actions ---------------------------------------------
+  const onboard = useCallback(
+    async (p: {
+      displayName: string;
+      favouriteTeamId: string | null;
+      avatarEmoji: string;
+      leagueCode?: string;
+    }) => {
+      if (!userId) return;
+      await supabase
+        .from("profiles")
+        .update({
+          display_name: p.displayName,
+          favourite_team_id: p.favouriteTeamId,
+          avatar_emoji: p.avatarEmoji,
+          onboarded: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
+      if (p.leagueCode && p.leagueCode.trim().length >= 4) {
+        await supabase.rpc("join_league_by_code", { p_code: p.leagueCode.trim() });
+      }
+
+      const prof = await loadProfile(userId);
+      setProfile(prof);
+      await Promise.all([loadLeagues(userId), loadLeaderboard(userId)]);
+    },
+    [supabase, userId, loadProfile, loadLeagues, loadLeaderboard]
+  );
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    clearAll();
+    window.location.assign("/login");
+  }, [supabase, clearAll]);
+
+  // ---- predictions ---------------------------------------------------------
+  const savePrediction = useCallback(
+    async (p: Prediction) => {
+      // Optimistic local update so the board stays snappy.
+      setPredictions((prev) => ({ ...prev, [p.fixtureId]: p }));
+      if (!userId) return;
+      // The DB requires both scores; only persist a complete pick.
+      if (p.homeScore == null || p.awayScore == null) return;
+      await supabase.from("predictions").upsert(
+        {
+          user_id: userId,
+          fixture_id: p.fixtureId,
+          predicted_home_score: p.homeScore,
+          predicted_away_score: p.awayScore,
+          predicted_potm_player_id: p.potmPlayerId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,fixture_id" }
+      );
+    },
+    [supabase, userId]
+  );
+
+  const submitGameweek = useCallback(
+    async (gameweekId: string) => {
+      if (!userId) return;
+      const fixtureIds =
+        gameweekId === currentGameweek.id ? currentGameweek.fixtureIds : [];
+      const rows = fixtureIds
+        .map((fid) => predictions[fid])
+        .filter((p): p is Prediction => !!p && p.homeScore != null && p.awayScore != null)
+        .map((p) => ({
+          user_id: userId,
+          fixture_id: p.fixtureId,
+          predicted_home_score: p.homeScore,
+          predicted_away_score: p.awayScore,
+          predicted_potm_player_id: p.potmPlayerId,
+          updated_at: new Date().toISOString(),
+        }));
+      if (rows.length) {
+        await supabase.from("predictions").upsert(rows, { onConflict: "user_id,fixture_id" });
+      }
+    },
+    [supabase, userId, predictions]
+  );
 
   const isSubmitted = useCallback(
-    (gameweekId: string) => submittedGameweeks.includes(gameweekId),
-    [submittedGameweeks]
-  );
-
-  const setResult = useCallback(
-    (fixtureId: string, homeScore: number, awayScore: number, potmPlayerId: string | null) => {
-      setResults((prev) => ({ ...prev, [fixtureId]: { homeScore, awayScore, potmPlayerId } }));
+    (gameweekId: string) => {
+      const fixtureIds =
+        gameweekId === currentGameweek.id ? currentGameweek.fixtureIds : [];
+      if (!fixtureIds.length) return false;
+      return fixtureIds.every((fid) => {
+        const p = predictions[fid];
+        return !!p && p.homeScore != null && p.awayScore != null;
+      });
     },
-    []
+    [predictions]
   );
 
-  const clearResult = useCallback((fixtureId: string) => {
-    setResults((prev) => {
-      const next = { ...prev };
-      delete next[fixtureId];
-      return next;
-    });
-  }, []);
+  // ---- admin results -------------------------------------------------------
+  const setResult = useCallback(
+    async (fixtureId: string, homeScore: number, awayScore: number, potmPlayerId: string | null) => {
+      await supabase
+        .from("fixtures")
+        .update({ home_score: homeScore, away_score: awayScore, potm_player_id: potmPlayerId })
+        .eq("id", fixtureId);
+      await supabase.rpc("settle_fixture", { p_fixture_id: fixtureId });
+      await Promise.all([loadResults(), loadLeaderboard(userId)]);
+    },
+    [supabase, userId, loadResults, loadLeaderboard]
+  );
 
-  // Same rules as settle_fixture() in the database.
+  const clearResult = useCallback(
+    async (fixtureId: string) => {
+      await supabase.rpc("unsettle_fixture", { p_fixture_id: fixtureId });
+      setResults((prev) => {
+        const next = { ...prev };
+        delete next[fixtureId];
+        return next;
+      });
+      await loadLeaderboard(userId);
+    },
+    [supabase, userId, loadLeaderboard]
+  );
+
+  // Same rules as settle_fixture() in the database — used to preview points live.
   const scoreFor = useCallback(
     (fixtureId: string) => {
       const pred = predictions[fixtureId];
       const res = results[fixtureId];
-      if (!pred || !res || pred.homeScore === null || pred.awayScore === null) return null;
+      if (!pred || !res || pred.homeScore == null || pred.awayScore == null) return null;
 
       let result = 0;
       if (pred.homeScore === res.homeScore && pred.awayScore === res.awayScore) {
@@ -143,43 +378,75 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } else if (outcome(pred.homeScore, pred.awayScore) === outcome(res.homeScore, res.awayScore)) {
         result = 1; // correct outcome only
       }
-      const potm =
-        res.potmPlayerId && pred.potmPlayerId === res.potmPlayerId ? 2 : 0;
+      const potm = res.potmPlayerId && pred.potmPlayerId === res.potmPlayerId ? 2 : 0;
       return { result, potm, total: result + potm };
     },
     [predictions, results]
   );
 
   const myTotalPoints = useCallback(() => {
-    return currentGameweek.fixtureIds.reduce((sum, fid) => {
-      const s = scoreFor(fid);
-      return sum + (s ? s.total : 0);
-    }, 0);
-  }, [scoreFor]);
+    const mine = leaderboardRows.find((r) => r.userId === userId);
+    return mine ? mine.totalPoints : 0;
+  }, [leaderboardRows, userId]);
 
-  const leaderboard = useCallback((): LeaderboardRow[] => {
-    const me: LeaderboardRow | null = profile
-      ? {
-          userId: profile.id,
-          displayName: profile.displayName + " (you)",
-          avatarEmoji: profile.avatarEmoji,
-          favouriteTeamId: profile.favouriteTeamId,
-          totalPoints: myTotalPoints(),
-          exactScores: currentGameweek.fixtureIds.filter((f) => scoreFor(f)?.result === 3).length,
-          rank: 0,
-        }
-      : null;
-    const rows = [...rivalRows, ...(me ? [me] : [])]
-      .sort((a, b) => b.totalPoints - a.totalPoints)
-      .map((r, i) => ({ ...r, rank: i + 1 }));
-    return rows;
-  }, [profile, myTotalPoints, scoreFor]);
+  const leaderboard = useCallback(() => leaderboardRows, [leaderboardRows]);
+
+  // ---- leagues -------------------------------------------------------------
+  const createLeague = useCallback(
+    async (name: string): Promise<League> => {
+      const { data, error } = await supabase.rpc("create_league", { p_name: name });
+      if (error) throw error;
+      if (userId) await loadLeagues(userId);
+      const row = data as { id: string; name: string; code: string; created_by: string };
+      return { id: row.id, name: row.name, code: row.code, members: 1, isOwner: true };
+    },
+    [supabase, userId, loadLeagues]
+  );
+
+  const joinLeague = useCallback(
+    async (code: string): Promise<League> => {
+      const { data, error } = await supabase.rpc("join_league_by_code", { p_code: code });
+      if (error) throw error;
+      if (userId) await loadLeagues(userId);
+      const row = data as { id: string; name: string; code: string; created_by: string };
+      return {
+        id: row.id,
+        name: row.name,
+        code: row.code,
+        members: 1,
+        isOwner: row.created_by === userId,
+      };
+    },
+    [supabase, userId, loadLeagues]
+  );
+
+  const leagueLeaderboard = useCallback(
+    async (leagueId: string): Promise<LeagueStanding[]> => {
+      const { data } = await supabase.rpc("league_leaderboard", { p_league_id: leagueId });
+      return ((data ?? []) as Array<{
+        user_id: string;
+        display_name: string;
+        avatar_emoji: string | null;
+        favourite_team_id: string | null;
+        total_points: number;
+        rank: number;
+      }>).map((r) => ({
+        userId: r.user_id,
+        displayName: r.user_id === userId ? `${r.display_name} (you)` : r.display_name,
+        avatarEmoji: r.avatar_emoji ?? DEFAULT_AVATAR,
+        favouriteTeamId: r.favourite_team_id,
+        totalPoints: Number(r.total_points),
+        rank: Number(r.rank),
+      }));
+    },
+    [supabase, userId]
+  );
 
   const value: Store = {
     profile,
     predictions,
     results,
-    submittedGameweeks,
+    leagues,
     hydrated,
     onboard,
     signOut,
@@ -191,6 +458,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     scoreFor,
     myTotalPoints,
     leaderboard,
+    createLeague,
+    joinLeague,
+    leagueLeaderboard,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
