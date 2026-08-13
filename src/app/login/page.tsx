@@ -41,17 +41,6 @@ export default function LoginPage() {
   const canSubmit =
     /\S+@\S+\.\S+/.test(email) && password.length >= 6 && captchaOk && !busy;
 
-  async function signInWithGoogle() {
-    setError(null);
-    setNotice(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    // On success the browser is redirected to Google; we only get here on error.
-    if (error) setError(error.message);
-  }
-
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
@@ -111,21 +100,6 @@ export default function LoginPage() {
             ? "Welcome back — pick up where you left off."
             : "Sign up once, then play on any device."}
         </p>
-
-        <button
-          type="button"
-          onClick={signInWithGoogle}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold mb-4"
-          style={{ background: "#fff", color: "#1c1424", border: "1px solid var(--rp-border)" }}
-        >
-          <span>🔵</span> Continue with Google
-        </button>
-
-        <div className="flex items-center gap-3 mb-4">
-          <span className="flex-1 h-px" style={{ background: "var(--rp-border)" }} />
-          <span className="text-xs" style={{ color: "var(--rp-muted)" }}>or with email</span>
-          <span className="flex-1 h-px" style={{ background: "var(--rp-border)" }} />
-        </div>
 
         <form onSubmit={submit}>
           <label className="block text-sm font-medium mb-1">Email</label>

@@ -43,6 +43,11 @@ create policy "profiles readable by authenticated"
 create policy "update own profile"
   on public.profiles for update to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
+-- You may create your OWN profile row. The signup trigger normally does this,
+-- but this lets the app self-heal an account that somehow has no profile row.
+create policy "insert own profile"
+  on public.profiles for insert to authenticated
+  with check (id = auth.uid());
 -- ...but only these columns. Column-level grants stop a user from patching
 -- their own is_admin flag (self-granting admin). Admin is granted out-of-band
 -- via the SQL editor (service role, which bypasses these grants).

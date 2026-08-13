@@ -10,7 +10,7 @@ import { TopNav } from "./TopNav";
 import { Onboarding } from "./Onboarding";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { profile, hydrated } = useStore();
+  const { userId, profile, hydrated } = useStore();
 
   // Wait for the Supabase session + profile to resolve so we don't flash the
   // wrong screen.
@@ -18,9 +18,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <div className="app-shell" />;
   }
 
-  // Unauthenticated: this is the /login page — render it without app chrome.
-  if (!profile) {
+  // Not signed in: this is the /login page — render it without app chrome.
+  // (The proxy guarantees only /login is reachable while signed out.)
+  if (!userId) {
     return <div className="app-shell">{children}</div>;
+  }
+
+  // Signed in but the profile is still resolving (or self-healing). Never render
+  // app content without nav — show a neutral placeholder until it loads.
+  if (!profile) {
+    return <div className="app-shell" />;
   }
 
   // Authenticated but hasn't set up their profile yet.

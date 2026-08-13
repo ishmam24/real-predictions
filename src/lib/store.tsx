@@ -27,6 +27,7 @@ type ResultsMap = Record<
 type PredictionsMap = Record<string, Prediction>;
 
 type Store = {
+  userId: string | null;
   profile: UserProfile | null;
   predictions: PredictionsMap;
   results: ResultsMap;
@@ -75,11 +76,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // ---- loaders -------------------------------------------------------------
   const loadProfile = useCallback(
     async (uid: string): Promise<UserProfile | null> => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, favourite_team_id, avatar_emoji, is_admin, onboarded")
-        .eq("id", uid)
-        .single();
+      const sel = "id, display_name, favourite_team_id, avatar_emoji, is_admin, onboarded";
+      let { data } = await supabase.from("profiles").select(sel).eq("id", uid).maybeSingle();
+      if (!data) {
+        // Self-heal: an authenticated user with no profile row (e.g. an account
+        // created before the signup trigger existed, or orphaned by a DB reset).
+        // Create a minimal row so the app isn't stranded without nav.
+        const { data: auth } = await supabase.auth.getUser();
+        const fallback = auth.user?.email?.split("@")[0] ?? "Player";
+        await supabase.from("profiles").insert({ id: uid, display_name: fallback });
+        ({ data } = await supabase.from("profiles").select(sel).eq("id", uid).maybeSingle());
+      }
       if (!data) return null;
       return {
         id: data.id,
@@ -443,6 +450,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value: Store = {
+    userId,
     profile,
     predictions,
     results,
