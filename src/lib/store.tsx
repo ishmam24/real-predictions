@@ -29,6 +29,7 @@ type PredictionsMap = Record<string, Prediction>;
 type Store = {
   userId: string | null;
   profile: UserProfile | null;
+  saveError: string | null;
   predictions: PredictionsMap;
   results: ResultsMap;
   leagues: League[];
@@ -72,6 +73,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardRow[]>([]);
   const [leagues, setLeagues] = useState<League[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  // Set when a prediction write to the DB fails, so the UI can stop pretending
+  // the pick was saved. Cleared on the next successful save.
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // ---- loaders -------------------------------------------------------------
   const loadProfile = useCallback(
@@ -295,7 +299,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (!userId) return;
       // The DB requires both scores; only persist a complete pick.
       if (p.homeScore == null || p.awayScore == null) return;
-      await supabase.from("predictions").upsert(
+      const { error } = await supabase.from("predictions").upsert(
         {
           user_id: userId,
           fixture_id: p.fixtureId,
@@ -306,6 +310,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         },
         { onConflict: "user_id,fixture_id" }
       );
+      if (error) {
+        console.error("savePrediction failed", error);
+        setSaveError("Couldn't save your pick to the server. Check your connection and try again.");
+      } else {
+        setSaveError(null);
+      }
     },
     [supabase, userId]
   );
@@ -327,7 +337,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           updated_at: new Date().toISOString(),
         }));
       if (rows.length) {
-        await supabase.from("predictions").upsert(rows, { onConflict: "user_id,fixture_id" });
+        const { error } = await supabase
+          .from("predictions")
+          .upsert(rows, { onConflict: "user_id,fixture_id" });
+        if (error) {
+          console.error("submitGameweek failed", error);
+          setSaveError("Couldn't submit your picks to the server. Check your connection and try again.");
+          throw error;
+        }
+        setSaveError(null);
       }
     },
     [supabase, userId, predictions]
@@ -452,6 +470,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const value: Store = {
     userId,
     profile,
+    saveError,
     predictions,
     results,
     leagues,
