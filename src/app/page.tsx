@@ -1,14 +1,14 @@
 "use client";
-// Predictions screen — the wizard in the main column, with a persistent
-// standings rail alongside it on wide screens.
-import { PredictionWizard } from "@/components/PredictionWizard";
+// Predictions screen — the scoreboard board in the main column, with a
+// persistent standings rail alongside it on wide screens.
+import { PredictionBoard } from "@/components/PredictionBoard";
 import { StandingsRail } from "@/components/StandingsRail";
 
 export default function PredictionsPage() {
   return (
     <div className="rp-rail-layout">
       <main>
-        <PredictionWizard />
+        <PredictionBoard />
       </main>
       <StandingsRail />
     </div>

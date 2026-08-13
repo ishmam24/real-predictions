@@ -60,10 +60,9 @@ const fixtures = top5.map((f, i) => ({
   potmPlayerId: null,
 }));
 
-// Squads only for the teams in the 5 fixtures (enough for the POTM picker).
-const fixtureTeamIds = new Set(fixtures.flatMap((f) => [f.homeTeamId, f.awayTeamId]));
+// Full squads for every team, so the POTM picker is never empty even if the
+// auto-picked fixtures change (or the admin rebuilds the gameweek).
 const players = boot.elements
-  .filter((e) => fixtureTeamIds.has(teamByFplId[e.team]))
   .map((e) => ({
     id: `p${e.id}`,
     teamId: teamByFplId[e.team],
@@ -120,4 +119,4 @@ console.log(`Wrote src/lib/mock-data.ts`);
 console.log(`Gameweek ${currentGameweek.number} "${currentGameweek.title}" deadline ${currentGameweek.deadline}`);
 console.log("Auto-picked fixtures:");
 top5.forEach((f) => console.log(`  ${f.homeName} v ${f.awayName}  (${f.score}) [${f.tags.join(", ")}]`));
-console.log(`Squads: ${players.length} players across ${fixtureTeamIds.size} teams`);
+console.log(`Squads: ${players.length} players across ${teams.length} teams`);

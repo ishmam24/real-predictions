@@ -1,13 +1,21 @@
 "use client";
 // ============================================================================
 // Player of the Match picker.
-// Two tabs — home team | away team — laid out as "Arsenal | Newcastle".
-// Tapping a tab shows that club's squad; tapping a player selects them.
-// The selection is a player id, so scoring is an exact match against the
-// admin-entered POTM (no name-spelling issues).
+// Two tabs — home team | away team ("Arsenal | Newcastle"). Each tab shows the
+// full club squad, ordered GK → DEF → MID → FWD then alphabetically, with a
+// search box to filter a large squad quickly. The selection is a player id, so
+// scoring is an exact match against the admin-entered POTM (no spelling drift).
 // ============================================================================
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Team, Player } from "@/lib/types";
+
+const POS_ORDER: Record<string, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
+
+function ordered(squad: Player[]) {
+  return [...squad].sort(
+    (a, b) => (POS_ORDER[a.position] ?? 9) - (POS_ORDER[b.position] ?? 9) || a.name.localeCompare(b.name)
+  );
+}
 
 export function PotmPicker({
   homeTeam,
@@ -29,14 +37,21 @@ export function PotmPicker({
   // Default the open tab to whichever side the currently selected player is on.
   const selectedOnAway = awaySquad.some((p) => p.id === selectedPlayerId);
   const [tab, setTab] = useState<"home" | "away">(selectedOnAway ? "away" : "home");
+  const [query, setQuery] = useState("");
 
-  const squad = tab === "home" ? homeSquad : awaySquad;
   const activeTeam = tab === "home" ? homeTeam : awayTeam;
+  const squad = tab === "home" ? homeSquad : awaySquad;
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = ordered(squad);
+    return q ? list.filter((p) => p.name.toLowerCase().includes(q)) : list;
+  }, [squad, query]);
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--rp-border)" }}>
+    <div className="rp-potm">
       {/* Tabs: Arsenal | Newcastle */}
-      <div className="grid grid-cols-2 text-sm font-semibold">
+      <div className="rp-potm__tabs">
         {(["home", "away"] as const).map((side) => {
           const team = side === "home" ? homeTeam : awayTeam;
           const active = tab === side;
@@ -45,10 +60,10 @@ export function PotmPicker({
               key={side}
               type="button"
               disabled={disabled}
-              onClick={() => setTab(side)}
-              className="py-2.5 transition-colors"
+              onClick={() => { setTab(side); setQuery(""); }}
+              className="rp-potm__tab"
               style={{
-                background: active ? activeTeam.color : "var(--rp-surface-2)",
+                background: active ? team.color : "var(--rp-surface-2)",
                 color: active ? "#fff" : "var(--rp-muted)",
                 borderRight: side === "home" ? "1px solid var(--rp-border)" : undefined,
               }}
@@ -59,9 +74,18 @@ export function PotmPicker({
         })}
       </div>
 
-      {/* Squad list for the active tab */}
-      <ul className="max-h-56 overflow-y-auto divide-y" style={{ borderColor: "var(--rp-border)" }}>
-        {squad.map((p) => {
+      <input
+        type="text"
+        value={query}
+        disabled={disabled}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={`Search ${activeTeam.name} squad (${squad.length})`}
+        className="rp-potm__search"
+      />
+
+      <ul className="rp-potm__list">
+        {rows.length === 0 && <li className="rp-potm__empty">No players match “{query}”.</li>}
+        {rows.map((p) => {
           const selected = p.id === selectedPlayerId;
           return (
             <li key={p.id}>
@@ -69,21 +93,14 @@ export function PotmPicker({
                 type="button"
                 disabled={disabled}
                 onClick={() => onSelect(p.id)}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-left"
-                style={{ background: selected ? "var(--rp-surface-2)" : "transparent" }}
+                className="rp-potm__row"
+                style={{ background: selected ? "var(--rp-accent-soft)" : "transparent" }}
               >
-                <span className="flex items-center gap-2.5">
-                  <span
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                    style={{ background: "var(--rp-border)", color: "var(--rp-muted)" }}
-                  >
-                    {p.position}
-                  </span>
-                  <span style={{ color: "var(--rp-text)" }}>{p.name}</span>
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <span className="rp-potm__pos">{p.position}</span>
+                  <span className="truncate" style={{ color: "var(--rp-text)" }}>{p.name}</span>
                 </span>
-                {selected && (
-                  <span style={{ color: "var(--rp-accent)" }} className="font-bold">✓</span>
-                )}
+                {selected && <span style={{ color: "var(--rp-accent)" }} className="font-bold">✓</span>}
               </button>
             </li>
           );
