@@ -1,11 +1,13 @@
 // ============================================================================
 // GET /api/cron/settle
 // Auto-settles finished fixtures. Meant to be hit on a schedule (Vercel Cron,
-// pg_cron, or any external scheduler). A frequent sweep faithfully implements
-// "settle ~2h after each kickoff, and re-check postponed matches later":
+// pg_cron, or any external scheduler). vercel.json runs it once daily because
+// the Vercel Hobby plan caps crons at daily; a match therefore settles on the
+// next daily run after it finishes (worst case ~24h later). On a paid plan you
+// can raise the frequency for near-real-time settlement — the logic is unchanged:
 //
 //   * We only look at a fixture once it is past kickoff + SETTLE_DELAY_MS, so we
-//     don't poll during the match.
+//     never settle one mid-match.
 //   * Authoritative "is it over?" comes from the FPL `finished` flag, not the
 //     clock — extra time / stoppages won't settle early.
 //   * Postponements self-correct: a moved match isn't `finished` at its old time
