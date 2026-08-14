@@ -50,6 +50,7 @@ const top5 = selectTopFixtures(candidates, undefined, 5);
 
 const fixtures = top5.map((f, i) => ({
   id: `f${i + 1}`,
+  externalId: Number(f.id), // FPL match id — used to auto-settle from live results
   gameweekId: "gw1",
   homeTeamId: f._h,
   awayTeamId: f._a,

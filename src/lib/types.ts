@@ -23,6 +23,7 @@ export type GameweekStatus = "draft" | "open" | "locked" | "completed";
 
 export type Fixture = {
   id: string;
+  externalId?: number;          // FPL match id — links to the live results feed
   gameweekId: string;
   homeTeamId: string;
   awayTeamId: string;
@@ -59,6 +60,7 @@ export type UserProfile = {
   avatarEmoji: string;          // simple emoji avatar chosen at onboarding
   isAdmin: boolean;             // unlocks the admin panel
   onboarded: boolean;           // finished profile setup (name/team/avatar)
+  introSeen: boolean;           // finished the 3-screen onboarding manual
 };
 
 // A private mini-league the player owns or has joined.

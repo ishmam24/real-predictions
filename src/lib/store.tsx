@@ -40,6 +40,7 @@ type Store = {
     avatarEmoji: string;
     leagueCode?: string;
   }) => Promise<void>;
+  finishIntro: () => Promise<void>;
   signOut: () => Promise<void>;
   savePrediction: (p: Prediction) => Promise<void>;
   submitGameweek: (gameweekId: string) => Promise<void>;
@@ -80,7 +81,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // ---- loaders -------------------------------------------------------------
   const loadProfile = useCallback(
     async (uid: string): Promise<UserProfile | null> => {
-      const sel = "id, display_name, favourite_team_id, avatar_emoji, is_admin, onboarded";
+      const sel = "id, display_name, favourite_team_id, avatar_emoji, is_admin, onboarded, intro_seen";
       let { data } = await supabase.from("profiles").select(sel).eq("id", uid).maybeSingle();
       if (!data) {
         // Self-heal: an authenticated user with no profile row (e.g. an account
@@ -99,6 +100,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         avatarEmoji: data.avatar_emoji ?? DEFAULT_AVATAR,
         isAdmin: data.is_admin,
         onboarded: data.onboarded,
+        introSeen: data.intro_seen ?? false,
       };
     },
     [supabase]
@@ -284,6 +286,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     },
     [supabase, userId, loadProfile, loadLeagues, loadLeaderboard]
   );
+
+  // Mark the 3-screen onboarding manual as seen so it never shows again. Called
+  // by the "Start Predicting" button at the end of the manual.
+  const finishIntro = useCallback(async () => {
+    if (!userId) return;
+    // Optimistic: flip locally so the app reveals immediately, no round-trip flash.
+    setProfile((prev) => (prev ? { ...prev, introSeen: true } : prev));
+    const { error } = await supabase
+      .from("profiles")
+      .update({ intro_seen: true, updated_at: new Date().toISOString() })
+      .eq("id", userId);
+    if (error) console.error("finishIntro failed", error);
+  }, [supabase, userId]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
@@ -476,6 +491,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     leagues,
     hydrated,
     onboard,
+    finishIntro,
     signOut,
     savePrediction,
     submitGameweek,

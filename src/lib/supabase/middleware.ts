@@ -4,8 +4,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Paths that must stay reachable without a session.
-const PUBLIC_PATHS = ["/login", "/auth"];
+// Paths that must stay reachable without a session. /api/cron is hit by an
+// external scheduler with a Bearer token (no auth cookie) and enforces its own
+// CRON_SECRET, so the session redirect must not intercept it.
+const PUBLIC_PATHS = ["/login", "/auth", "/api/cron"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
