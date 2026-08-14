@@ -69,13 +69,13 @@ insert into public.players (id, team_id, name, position) values
   ('p160', 'avl', 'Garnacho', 'MID'),
   ('p51', 'avl', 'George Hemmings', 'MID'),
   ('p54', 'avl', 'Gomes', 'MID'),
-  ('p42', 'avl', 'Guessand', 'MID'),
   ('p49', 'avl', 'Iling Jr', 'MID'),
   ('p47', 'avl', 'Kamara', 'MID'),
   ('p31', 'avl', 'Konsa', 'DEF'),
   ('p37', 'avl', 'Lindelöf', 'DEF'),
   ('p29', 'avl', 'M.Bizot', 'GK'),
   ('p36', 'avl', 'Maatsen', 'DEF'),
+  ('p582', 'avl', 'Madjo', 'FWD'),
   ('p53', 'avl', 'Manzambi', 'MID'),
   ('p28', 'avl', 'Martinez', 'GK'),
   ('p45', 'avl', 'McGinn', 'MID'),
@@ -173,6 +173,7 @@ insert into public.players (id, team_id, name, position) values
   ('p568', 'che', 'Barco', 'MID'),
   ('p159', 'che', 'Caicedo', 'MID'),
   ('p143', 'che', 'Chalobah', 'DEF'),
+  ('p583', 'che', 'Chavarria', 'DEF'),
   ('p149', 'che', 'Colwill', 'DEF'),
   ('p163', 'che', 'D.Essugo', 'MID'),
   ('p167', 'che', 'Delap', 'FWD'),
@@ -214,6 +215,7 @@ insert into public.players (id, team_id, name, position) values
   ('p171', 'cov', 'Dovin', 'GK'),
   ('p187', 'cov', 'Eccles', 'MID'),
   ('p184', 'cov', 'Grimes', 'MID'),
+  ('p584', 'cov', 'Hamer', 'MID'),
   ('p177', 'cov', 'Kesler-Hayden', 'DEF'),
   ('p174', 'cov', 'Kitching', 'DEF'),
   ('p179', 'cov', 'Latibeaudiere', 'DEF'),
@@ -242,6 +244,7 @@ insert into public.players (id, team_id, name, position) values
   ('p218', 'cry', 'Doucouré', 'MID'),
   ('p221', 'cry', 'Drakes-Thomas', 'MID'),
   ('p216', 'cry', 'Esse', 'MID'),
+  ('p42', 'cry', 'Guessand', 'MID'),
   ('p198', 'cry', 'Henderson', 'GK'),
   ('p212', 'cry', 'Hughes', 'MID'),
   ('p219', 'cry', 'J.Rak-Sakyi', 'MID'),
@@ -615,11 +618,11 @@ insert into public.gameweeks (id, number, title, deadline, status) values
   ('gw1', 1, 'Gameweek 1', '2026-08-21T17:30:00Z', 'open')
 on conflict (id) do update set number = excluded.number, title = excluded.title, deadline = excluded.deadline, status = excluded.status;
 
-insert into public.fixtures (id, gameweek_id, home_team_id, away_team_id, kickoff_time, status, home_score, away_score, potm_player_id) values
-  ('f1', 'gw1', 'ful', 'che', '2026-08-24T19:00:00Z', 'scheduled', null, null, null),
-  ('f2', 'gw1', 'new', 'liv', '2026-08-23T15:30:00Z', 'scheduled', null, null, null),
-  ('f3', 'gw1', 'ars', 'cov', '2026-08-21T19:00:00Z', 'scheduled', null, null, null),
-  ('f4', 'gw1', 'hul', 'mun', '2026-08-22T11:30:00Z', 'scheduled', null, null, null),
-  ('f5', 'gw1', 'bre', 'tot', '2026-08-22T16:30:00Z', 'scheduled', null, null, null)
-on conflict (id) do update set gameweek_id = excluded.gameweek_id, home_team_id = excluded.home_team_id, away_team_id = excluded.away_team_id, kickoff_time = excluded.kickoff_time;
+insert into public.fixtures (id, external_id, gameweek_id, home_team_id, away_team_id, kickoff_time, status, home_score, away_score, potm_player_id) values
+  ('f1', 10, 'gw1', 'ful', 'che', '2026-08-24T19:00:00Z', 'scheduled', null, null, null),
+  ('f2', 9, 'gw1', 'new', 'liv', '2026-08-23T15:30:00Z', 'scheduled', null, null, null),
+  ('f3', 1, 'gw1', 'ars', 'cov', '2026-08-21T19:00:00Z', 'scheduled', null, null, null),
+  ('f4', 4, 'gw1', 'hul', 'mun', '2026-08-22T11:30:00Z', 'scheduled', null, null, null),
+  ('f5', 2, 'gw1', 'bre', 'tot', '2026-08-22T16:30:00Z', 'scheduled', null, null, null)
+on conflict (id) do update set external_id = excluded.external_id, gameweek_id = excluded.gameweek_id, home_team_id = excluded.home_team_id, away_team_id = excluded.away_team_id, kickoff_time = excluded.kickoff_time;
 
