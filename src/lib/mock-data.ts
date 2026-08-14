@@ -398,12 +398,6 @@ export const players: Player[] = [
     "position": "MID"
   },
   {
-    "id": "p42",
-    "teamId": "avl",
-    "name": "Guessand",
-    "position": "MID"
-  },
-  {
     "id": "p49",
     "teamId": "avl",
     "name": "Iling Jr",
@@ -438,6 +432,12 @@ export const players: Player[] = [
     "teamId": "avl",
     "name": "Maatsen",
     "position": "DEF"
+  },
+  {
+    "id": "p582",
+    "teamId": "avl",
+    "name": "Madjo",
+    "position": "FWD"
   },
   {
     "id": "p53",
@@ -1022,6 +1022,12 @@ export const players: Player[] = [
     "position": "DEF"
   },
   {
+    "id": "p583",
+    "teamId": "che",
+    "name": "Chavarria",
+    "position": "DEF"
+  },
+  {
     "id": "p149",
     "teamId": "che",
     "name": "Colwill",
@@ -1268,6 +1274,12 @@ export const players: Player[] = [
     "position": "MID"
   },
   {
+    "id": "p584",
+    "teamId": "cov",
+    "name": "Hamer",
+    "position": "MID"
+  },
+  {
     "id": "p177",
     "teamId": "cov",
     "name": "Kesler-Hayden",
@@ -1433,6 +1445,12 @@ export const players: Player[] = [
     "id": "p216",
     "teamId": "cry",
     "name": "Esse",
+    "position": "MID"
+  },
+  {
+    "id": "p42",
+    "teamId": "cry",
+    "name": "Guessand",
     "position": "MID"
   },
   {
@@ -3657,6 +3675,7 @@ export const currentGameweek: Gameweek = {
 export const fixtures: Fixture[] = [
   {
     "id": "f1",
+    "externalId": 10,
     "gameweekId": "gw1",
     "homeTeamId": "ful",
     "awayTeamId": "che",
@@ -3668,6 +3687,7 @@ export const fixtures: Fixture[] = [
   },
   {
     "id": "f2",
+    "externalId": 9,
     "gameweekId": "gw1",
     "homeTeamId": "new",
     "awayTeamId": "liv",
@@ -3679,6 +3699,7 @@ export const fixtures: Fixture[] = [
   },
   {
     "id": "f3",
+    "externalId": 1,
     "gameweekId": "gw1",
     "homeTeamId": "ars",
     "awayTeamId": "cov",
@@ -3690,6 +3711,7 @@ export const fixtures: Fixture[] = [
   },
   {
     "id": "f4",
+    "externalId": 4,
     "gameweekId": "gw1",
     "homeTeamId": "hul",
     "awayTeamId": "mun",
@@ -3701,6 +3723,7 @@ export const fixtures: Fixture[] = [
   },
   {
     "id": "f5",
+    "externalId": 2,
     "gameweekId": "gw1",
     "homeTeamId": "bre",
     "awayTeamId": "tot",

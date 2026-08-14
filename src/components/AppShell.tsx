@@ -8,6 +8,7 @@ import { useStore } from "@/lib/store";
 import { BottomNav } from "./BottomNav";
 import { TopNav } from "./TopNav";
 import { Onboarding } from "./Onboarding";
+import { IntroOnboarding } from "./IntroOnboarding";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { userId, profile, hydrated, signOut } = useStore();
@@ -53,6 +54,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="app-shell">
         <Onboarding />
+      </div>
+    );
+  }
+
+  // Profile is set up, but the new player hasn't been through the 3-screen
+  // manual yet. Show it once before they reach the prediction board.
+  if (!profile.introSeen) {
+    return (
+      <div className="app-shell">
+        <IntroOnboarding />
       </div>
     );
   }

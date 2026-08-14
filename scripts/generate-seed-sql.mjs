@@ -54,16 +54,16 @@ lines.push(
 lines.push("");
 
 lines.push(
-  "insert into public.fixtures (id, gameweek_id, home_team_id, away_team_id, kickoff_time, status, home_score, away_score, potm_player_id) values",
+  "insert into public.fixtures (id, external_id, gameweek_id, home_team_id, away_team_id, kickoff_time, status, home_score, away_score, potm_player_id) values",
 );
 lines.push(
   fixtures
     .map(
       (f) =>
-        `  (${q(f.id)}, ${q(f.gameweekId)}, ${q(f.homeTeamId)}, ${q(f.awayTeamId)}, ${q(f.kickoff)}, ${q(f.status)}, ${n(f.homeScore)}, ${n(f.awayScore)}, ${q(f.potmPlayerId)})`,
+        `  (${q(f.id)}, ${n(f.externalId)}, ${q(f.gameweekId)}, ${q(f.homeTeamId)}, ${q(f.awayTeamId)}, ${q(f.kickoff)}, ${q(f.status)}, ${n(f.homeScore)}, ${n(f.awayScore)}, ${q(f.potmPlayerId)})`,
     )
     .join(",\n") +
-    "\non conflict (id) do update set gameweek_id = excluded.gameweek_id, home_team_id = excluded.home_team_id, away_team_id = excluded.away_team_id, kickoff_time = excluded.kickoff_time;",
+    "\non conflict (id) do update set external_id = excluded.external_id, gameweek_id = excluded.gameweek_id, home_team_id = excluded.home_team_id, away_team_id = excluded.away_team_id, kickoff_time = excluded.kickoff_time;",
 );
 lines.push("");
 
@@ -71,7 +71,7 @@ const seed = lines.join("\n");
 writeFileSync(join(root, "supabase", "seed.sql"), seed + "\n");
 
 // --- Combine migrations + seed into a single paste-me file ------------------
-const migrations = ["0001_schema.sql", "0002_scoring.sql", "0003_rls.sql"];
+const migrations = ["0001_schema.sql", "0002_scoring.sql", "0003_rls.sql", "0004_intro_onboarding.sql"];
 const parts = [
   "-- ============================================================================",
   "-- Real Predictions — full database setup.",
