@@ -11,37 +11,6 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 
-// A stylised striker mid-kick, drawn from primitive shapes so it renders
-// crisply at any size with no external asset (Artifact/CSP-safe). currentColor
-// drives the fill/stroke, so the caller sets the colour.
-function FootballerSilhouette({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 220 240" className={className} role="img" aria-label="Footballer striking a ball" fill="none">
-      <g stroke="currentColor" strokeWidth={20} strokeLinecap="round" strokeLinejoin="round" fill="currentColor">
-        {/* head */}
-        <circle cx="124" cy="34" r="17" stroke="none" />
-        {/* torso */}
-        <path d="M120 54 L126 120" fill="none" />
-        {/* arms, out for balance */}
-        <path d="M122 66 L162 92" fill="none" />
-        <path d="M122 70 L86 96" fill="none" />
-        {/* standing leg */}
-        <path d="M126 120 L142 168 L150 208" fill="none" />
-        {/* kicking leg, driving through the ball */}
-        <path d="M126 120 L96 150 L56 176" fill="none" />
-      </g>
-      {/* the ball at the striking foot */}
-      <circle cx="40" cy="188" r="19" fill="currentColor" opacity="0.85" />
-      <circle cx="40" cy="188" r="19" fill="none" stroke="var(--rp-ground)" strokeWidth="2" />
-      <path
-        d="M40 178 L48 184 L45 194 L35 194 L32 184 Z"
-        fill="var(--rp-ground)"
-        opacity="0.6"
-      />
-    </svg>
-  );
-}
-
 type Screen = { key: string; render: () => React.ReactNode };
 
 export function IntroOnboarding() {
@@ -75,8 +44,8 @@ export function IntroOnboarding() {
           </p>
           <div className="flex flex-col gap-2.5 text-left">
             <ScoreRow pts="3" label="Exact scoreline" sub="Both numbers spot on" />
-            <ScoreRow pts="1" label="Correct result" sub="Right win, draw or loss" />
             <ScoreRow pts="2" label="Player of the Match" sub="Called the standout performer" />
+            <ScoreRow pts="1" label="Correct result" sub="Right win, draw or loss" />
           </div>
         </>
       ),
@@ -85,20 +54,14 @@ export function IntroOnboarding() {
       key: "pitch",
       render: () => (
         <>
-          <div className="relative mx-auto mb-4" style={{ width: 132, height: 150 }}>
-            <div
-              className="absolute inset-0 rounded-full blur-2xl"
-              style={{ background: "var(--rp-accent-soft)" }}
-            />
-            <FootballerSilhouette className="relative w-full h-full" />
-          </div>
+          <div className="text-5xl mb-5">🏃</div>
           <h2 className="rp-display text-2xl font-extrabold text-white mb-3">
             Compete with your friends
           </h2>
           <p className="text-[15px] leading-relaxed" style={{ color: "#9fb0c2" }}>
             Predict the fixtures, show off your ball knowledge, and pick the Player of
             the Match. Build a mini-league, settle the debate, and see who really knows
-            their football.
+            ball.
           </p>
         </>
       ),
