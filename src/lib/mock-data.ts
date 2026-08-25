@@ -1,11 +1,17 @@
 // ============================================================================
-// AUTO-GENERATED from the live FPL API by scripts/generate-pl-data.mjs
-// Real current-season Premier League teams (with crests), squads, and the
-// upcoming gameweek's fixtures (top 5 auto-picked by the prominence model).
-// Regenerate with: node scripts/generate-pl-data.mjs
+// `teams` and `players` below are refreshed from the live FPL API by
+// scripts/generate-pl-data.mjs (real current-season clubs with crests, and
+// full squads) — safe to rerun any time, e.g. after a transfer window; it
+// only splices those two blocks and never touches anything else in this file.
+//
+// `gameweeks` and `fixtures` are hand-maintained instead, one gameweek at a
+// time: pick the top 5 with getNextGameweek() + selectTopFixtures (src/lib/fpl.ts
+// / prominence.ts — the same algorithm the admin "auto-pick" screen uses), add
+// the block below, then publish it to the live DB with scripts/publish-gameweek.mjs.
+//
 // This stands in for the database in the prototype; Supabase replaces it later.
 // ============================================================================
-import type { Team, Player, Fixture, Gameweek, LeaderboardRow } from "./types";
+import type { Team, Player, Fixture, Gameweek } from "./types";
 
 export const teams: Team[] = [
   {
@@ -3657,20 +3663,40 @@ export const players: Player[] = [
   }
 ];
 
-export const currentGameweek: Gameweek = {
-  "id": "gw1",
-  "number": 1,
-  "title": "Gameweek 1",
-  "deadline": "2026-08-21T17:30:00Z",
-  "status": "open",
-  "fixtureIds": [
-    "f1",
-    "f2",
-    "f3",
-    "f4",
-    "f5"
-  ]
-};
+// Every gameweek published so far, oldest first. `currentGameweek` (below) is
+// always the last, still-open one — the rest are history (see /history).
+export const gameweeks: Gameweek[] = [
+  {
+    "id": "gw1",
+    "number": 1,
+    "title": "Gameweek 1",
+    "deadline": "2026-08-21T17:30:00Z",
+    "status": "completed",
+    "fixtureIds": [
+      "f1",
+      "f2",
+      "f3",
+      "f4",
+      "f5"
+    ]
+  },
+  {
+    "id": "gw2",
+    "number": 2,
+    "title": "Gameweek 2",
+    "deadline": "2026-08-28T17:30:00Z",
+    "status": "open",
+    "fixtureIds": [
+      "f6",
+      "f7",
+      "f8",
+      "f9",
+      "f10"
+    ]
+  }
+];
+
+export const currentGameweek: Gameweek = gameweeks[gameweeks.length - 1];
 
 export const fixtures: Fixture[] = [
   {
@@ -3732,54 +3758,66 @@ export const fixtures: Fixture[] = [
     "homeScore": null,
     "awayScore": null,
     "potmPlayerId": null
-  }
-];
-
-export const rivalRows: LeaderboardRow[] = [
-  {
-    "userId": "u_sam",
-    "displayName": "Sam",
-    "avatarEmoji": "🦊",
-    "favouriteTeamId": "liv",
-    "totalPoints": 41,
-    "exactScores": 6,
-    "rank": 0
   },
   {
-    "userId": "u_priya",
-    "displayName": "Priya",
-    "avatarEmoji": "🐝",
-    "favouriteTeamId": "ars",
-    "totalPoints": 38,
-    "exactScores": 5,
-    "rank": 0
+    "id": "f6",
+    "externalId": 15,
+    "gameweekId": "gw2",
+    "homeTeamId": "tot",
+    "awayTeamId": "new",
+    "kickoff": "2026-08-29T16:30:00Z",
+    "status": "scheduled",
+    "homeScore": null,
+    "awayScore": null,
+    "potmPlayerId": null
   },
   {
-    "userId": "u_marco",
-    "displayName": "Marco",
-    "avatarEmoji": "🐺",
-    "favouriteTeamId": "mci",
-    "totalPoints": 33,
-    "exactScores": 4,
-    "rank": 0
+    "id": "f7",
+    "externalId": 14,
+    "gameweekId": "gw2",
+    "homeTeamId": "liv",
+    "awayTeamId": "nfo",
+    "kickoff": "2026-08-29T11:30:00Z",
+    "status": "scheduled",
+    "homeScore": null,
+    "awayScore": null,
+    "potmPlayerId": null
   },
   {
-    "userId": "u_kemi",
-    "displayName": "Kemi",
-    "avatarEmoji": "🦁",
-    "favouriteTeamId": "che",
-    "totalPoints": 29,
-    "exactScores": 3,
-    "rank": 0
+    "id": "f8",
+    "externalId": 16,
+    "gameweekId": "gw2",
+    "homeTeamId": "che",
+    "awayTeamId": "bha",
+    "kickoff": "2026-08-30T13:00:00Z",
+    "status": "scheduled",
+    "homeScore": null,
+    "awayScore": null,
+    "potmPlayerId": null
   },
   {
-    "userId": "u_dan",
-    "displayName": "Dan",
-    "avatarEmoji": "🐢",
-    "favouriteTeamId": "tot",
-    "totalPoints": 22,
-    "exactScores": 2,
-    "rank": 0
+    "id": "f9",
+    "externalId": 20,
+    "gameweekId": "gw2",
+    "homeTeamId": "avl",
+    "awayTeamId": "ars",
+    "kickoff": "2026-08-31T19:00:00Z",
+    "status": "scheduled",
+    "homeScore": null,
+    "awayScore": null,
+    "potmPlayerId": null
+  },
+  {
+    "id": "f10",
+    "externalId": 11,
+    "gameweekId": "gw2",
+    "homeTeamId": "cry",
+    "awayTeamId": "mci",
+    "kickoff": "2026-08-28T19:00:00Z",
+    "status": "scheduled",
+    "homeScore": null,
+    "awayScore": null,
+    "potmPlayerId": null
   }
 ];
 
@@ -3787,4 +3825,3 @@ export const rivalRows: LeaderboardRow[] = [
 export const teamById = (id: string) => teams.find((t) => t.id === id)!;
 export const playerById = (id: string) => players.find((p) => p.id === id);
 export const squadFor = (teamId: string) => players.filter((p) => p.teamId === teamId);
-export const fixtureById = (id: string) => fixtures.find((f) => f.id === id)!;

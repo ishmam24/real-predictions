@@ -1,8 +1,10 @@
-// Generates src/lib/mock-data.ts from the live FPL API: real current-season
-// teams (with crest URLs), squads, and the next gameweek's fixtures with the
-// top-5 auto-picked by the prominence model. Run: node scripts/generate-pl-data.mjs
-import { writeFileSync } from "node:fs";
-import { selectTopFixtures } from "../src/lib/prominence.ts";
+// Refreshes the `teams` and `players` blocks in src/lib/mock-data.ts from the
+// live FPL API (real current-season clubs with crests, and full squads) —
+// e.g. after a transfer window, or to bootstrap a new season. Everything else
+// in that file (gameweeks, fixtures) is hand-maintained per gameweek — see
+// scripts/publish-gameweek.mjs — and is left untouched here.
+// Run: node --experimental-strip-types scripts/generate-pl-data.mjs
+import { readFileSync, writeFileSync } from "node:fs";
 
 const UA = { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36" };
 const api = "https://fantasy.premierleague.com/api";
@@ -29,40 +31,6 @@ const teams = boot.teams.map((t) => ({
 }));
 const teamByFplId = Object.fromEntries(boot.teams.map((t) => [t.id, t.short_name.toLowerCase()]));
 
-// Next (or current) gameweek.
-const event = boot.events.find((e) => e.is_next) || boot.events.find((e) => e.is_current) || boot.events[0];
-
-// All fixtures of that gameweek, mapped for the prominence model.
-const allFx = await (await fetch(`${api}/fixtures/?event=${event.id}`, { headers: UA })).json();
-const candidates = allFx.map((f) => ({
-  id: String(f.id),
-  homeTla: boot.teams.find((t) => t.id === f.team_h).short_name,
-  awayTla: boot.teams.find((t) => t.id === f.team_a).short_name,
-  homeName: boot.teams.find((t) => t.id === f.team_h).name,
-  awayName: boot.teams.find((t) => t.id === f.team_a).name,
-  kickoff: f.kickoff_time,
-  _h: teamByFplId[f.team_h],
-  _a: teamByFplId[f.team_a],
-}));
-
-// Auto-pick the 5 most prominent (no standings pre-season -> stature + derbies).
-const top5 = selectTopFixtures(candidates, undefined, 5);
-
-const fixtures = top5.map((f, i) => ({
-  id: `f${i + 1}`,
-  externalId: Number(f.id), // FPL match id — used to auto-settle from live results
-  gameweekId: "gw1",
-  homeTeamId: f._h,
-  awayTeamId: f._a,
-  kickoff: f.kickoff,
-  status: "scheduled",
-  homeScore: null,
-  awayScore: null,
-  potmPlayerId: null,
-}));
-
-// Full squads for every team, so the POTM picker is never empty even if the
-// auto-picked fixtures change (or the admin rebuilds the gameweek).
 const players = boot.elements
   .map((e) => ({
     id: `p${e.id}`,
@@ -72,52 +40,31 @@ const players = boot.elements
   }))
   .sort((a, b) => a.teamId.localeCompare(b.teamId) || a.name.localeCompare(b.name));
 
-const currentGameweek = {
-  id: "gw1",
-  number: event.id,
-  title: event.name,
-  deadline: event.deadline_time,
-  status: "open",
-  fixtureIds: fixtures.map((f) => f.id),
-};
+// ---- splice the two blocks into the existing file, leaving the rest as-is ---
+const path = new URL("../src/lib/mock-data.ts", import.meta.url);
+const src = readFileSync(path, "utf8");
 
-const rivalRows = [
-  { userId: "u_sam",   displayName: "Sam",   avatarEmoji: "🦊", favouriteTeamId: "liv", totalPoints: 41, exactScores: 6, rank: 0 },
-  { userId: "u_priya", displayName: "Priya", avatarEmoji: "🐝", favouriteTeamId: "ars", totalPoints: 38, exactScores: 5, rank: 0 },
-  { userId: "u_marco", displayName: "Marco", avatarEmoji: "🐺", favouriteTeamId: "mci", totalPoints: 33, exactScores: 4, rank: 0 },
-  { userId: "u_kemi",  displayName: "Kemi",  avatarEmoji: "🦁", favouriteTeamId: "che", totalPoints: 29, exactScores: 3, rank: 0 },
-  { userId: "u_dan",   displayName: "Dan",   avatarEmoji: "🐢", favouriteTeamId: "tot", totalPoints: 22, exactScores: 2, rank: 0 },
-];
+function replaceBlock(text, exportDecl, replacementValue) {
+  const start = text.indexOf(exportDecl);
+  if (start === -1) throw new Error(`Could not find "${exportDecl}" in mock-data.ts`);
+  // Search from AFTER the declaration text, not `start` itself — exportDecl
+  // contains a type annotation like "Team[]" whose own brackets would
+  // otherwise be mistaken for the start of the array literal.
+  const arrayStart = text.indexOf("[", start + exportDecl.length);
+  // Walk bracket depth to find the matching close, so nested arrays/objects don't confuse it.
+  let depth = 0, i = arrayStart;
+  for (; i < text.length; i++) {
+    if (text[i] === "[") depth++;
+    else if (text[i] === "]") { depth--; if (depth === 0) break; }
+  }
+  const arrayEnd = i + 1; // include the closing ]
+  return text.slice(0, arrayStart) + JSON.stringify(replacementValue, null, 2) + text.slice(arrayEnd);
+}
 
-const out = `// ============================================================================
-// AUTO-GENERATED from the live FPL API by scripts/generate-pl-data.mjs
-// Real current-season Premier League teams (with crests), squads, and the
-// upcoming gameweek's fixtures (top 5 auto-picked by the prominence model).
-// Regenerate with: node scripts/generate-pl-data.mjs
-// This stands in for the database in the prototype; Supabase replaces it later.
-// ============================================================================
-import type { Team, Player, Fixture, Gameweek, LeaderboardRow } from "./types";
+let out = src;
+out = replaceBlock(out, "export const teams: Team[] = ", teams);
+out = replaceBlock(out, "export const players: Player[] = ", players);
 
-export const teams: Team[] = ${JSON.stringify(teams, null, 2)};
-
-export const players: Player[] = ${JSON.stringify(players, null, 2)};
-
-export const currentGameweek: Gameweek = ${JSON.stringify(currentGameweek, null, 2)};
-
-export const fixtures: Fixture[] = ${JSON.stringify(fixtures, null, 2)};
-
-export const rivalRows: LeaderboardRow[] = ${JSON.stringify(rivalRows, null, 2)};
-
-// ---- convenience lookups ---------------------------------------------------
-export const teamById = (id: string) => teams.find((t) => t.id === id)!;
-export const playerById = (id: string) => players.find((p) => p.id === id);
-export const squadFor = (teamId: string) => players.filter((p) => p.teamId === teamId);
-export const fixtureById = (id: string) => fixtures.find((f) => f.id === id)!;
-`;
-
-writeFileSync(new URL("../src/lib/mock-data.ts", import.meta.url), out);
-console.log(`Wrote src/lib/mock-data.ts`);
-console.log(`Gameweek ${currentGameweek.number} "${currentGameweek.title}" deadline ${currentGameweek.deadline}`);
-console.log("Auto-picked fixtures:");
-top5.forEach((f) => console.log(`  ${f.homeName} v ${f.awayName}  (${f.score}) [${f.tags.join(", ")}]`));
-console.log(`Squads: ${players.length} players across ${teams.length} teams`);
+writeFileSync(path, out);
+console.log(`Refreshed teams (${teams.length}) and players (${players.length}) in src/lib/mock-data.ts.`);
+console.log("gameweeks/fixtures were left untouched — publish new ones by hand + scripts/publish-gameweek.mjs.");

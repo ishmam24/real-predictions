@@ -8,6 +8,7 @@ const tabs = [
   { href: "/", label: "Predict" },
   { href: "/leaderboard", label: "Table" },
   { href: "/leagues", label: "Leagues" },
+  { href: "/history", label: "History" },
   { href: "/profile", label: "Profile" },
 ];
 
