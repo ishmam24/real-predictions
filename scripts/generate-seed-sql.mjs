@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { teams, players, fixtures, currentGameweek } from "../src/lib/mock-data.ts";
+import { teams, players, fixtures, gameweeks } from "../src/lib/mock-data.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -45,10 +45,11 @@ lines.push(
 );
 lines.push("");
 
-const gw = currentGameweek;
 lines.push("insert into public.gameweeks (id, number, title, deadline, status) values");
 lines.push(
-  `  (${q(gw.id)}, ${n(gw.number)}, ${q(gw.title)}, ${q(gw.deadline)}, ${q(gw.status)})` +
+  gameweeks
+    .map((gw) => `  (${q(gw.id)}, ${n(gw.number)}, ${q(gw.title)}, ${q(gw.deadline)}, ${q(gw.status)})`)
+    .join(",\n") +
     "\non conflict (id) do update set number = excluded.number, title = excluded.title, deadline = excluded.deadline, status = excluded.status;",
 );
 lines.push("");
@@ -128,5 +129,5 @@ parts.push("");
 writeFileSync(join(root, "supabase", "setup.sql"), parts.join("\n"));
 
 console.log(
-  `Wrote supabase/seed.sql and supabase/setup.sql — ${teams.length} teams, ${players.length} players, ${fixtures.length} fixtures, gameweek ${gw.id}.`,
+  `Wrote supabase/seed.sql and supabase/setup.sql — ${teams.length} teams, ${players.length} players, ${fixtures.length} fixtures, gameweeks ${gameweeks.map((g) => g.id).join(", ")}.`,
 );

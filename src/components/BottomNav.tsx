@@ -7,6 +7,7 @@ const tabs = [
   { href: "/", label: "Predict", icon: "⚽" },
   { href: "/leaderboard", label: "Table", icon: "🏆" },
   { href: "/leagues", label: "Leagues", icon: "👥" },
+  { href: "/history", label: "History", icon: "📜" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 
@@ -21,7 +22,7 @@ export function BottomNav() {
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {tabs.map((t) => {
           const active = t.href === "/" ? pathname === "/" : pathname.startsWith(t.href);
           return (

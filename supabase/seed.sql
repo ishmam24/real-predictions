@@ -615,7 +615,8 @@ insert into public.players (id, team_id, name, position) values
 on conflict (id) do update set team_id = excluded.team_id, name = excluded.name, position = excluded.position;
 
 insert into public.gameweeks (id, number, title, deadline, status) values
-  ('gw1', 1, 'Gameweek 1', '2026-08-21T17:30:00Z', 'open')
+  ('gw1', 1, 'Gameweek 1', '2026-08-21T17:30:00Z', 'completed'),
+  ('gw2', 2, 'Gameweek 2', '2026-08-28T17:30:00Z', 'open')
 on conflict (id) do update set number = excluded.number, title = excluded.title, deadline = excluded.deadline, status = excluded.status;
 
 insert into public.fixtures (id, external_id, gameweek_id, home_team_id, away_team_id, kickoff_time, status, home_score, away_score, potm_player_id) values
@@ -623,6 +624,11 @@ insert into public.fixtures (id, external_id, gameweek_id, home_team_id, away_te
   ('f2', 9, 'gw1', 'new', 'liv', '2026-08-23T15:30:00Z', 'scheduled', null, null, null),
   ('f3', 1, 'gw1', 'ars', 'cov', '2026-08-21T19:00:00Z', 'scheduled', null, null, null),
   ('f4', 4, 'gw1', 'hul', 'mun', '2026-08-22T11:30:00Z', 'scheduled', null, null, null),
-  ('f5', 2, 'gw1', 'bre', 'tot', '2026-08-22T16:30:00Z', 'scheduled', null, null, null)
+  ('f5', 2, 'gw1', 'bre', 'tot', '2026-08-22T16:30:00Z', 'scheduled', null, null, null),
+  ('f6', 15, 'gw2', 'tot', 'new', '2026-08-29T16:30:00Z', 'scheduled', null, null, null),
+  ('f7', 14, 'gw2', 'liv', 'nfo', '2026-08-29T11:30:00Z', 'scheduled', null, null, null),
+  ('f8', 16, 'gw2', 'che', 'bha', '2026-08-30T13:00:00Z', 'scheduled', null, null, null),
+  ('f9', 20, 'gw2', 'avl', 'ars', '2026-08-31T19:00:00Z', 'scheduled', null, null, null),
+  ('f10', 11, 'gw2', 'cry', 'mci', '2026-08-28T19:00:00Z', 'scheduled', null, null, null)
 on conflict (id) do update set external_id = excluded.external_id, gameweek_id = excluded.gameweek_id, home_team_id = excluded.home_team_id, away_team_id = excluded.away_team_id, kickoff_time = excluded.kickoff_time;
 
