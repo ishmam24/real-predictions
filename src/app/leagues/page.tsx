@@ -134,7 +134,10 @@ function LeagueCard({
   async function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && rows === null) {
+    // Re-fetch every time it's opened, not just the first time — otherwise a
+    // fixture settled after the initial load would leave stale points showing
+    // for the rest of the session.
+    if (next) {
       setLoading(true);
       try {
         setRows(await leagueLeaderboard(id));

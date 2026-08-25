@@ -1,11 +1,19 @@
 "use client";
 // Leaderboard — FPL-style ranked table of everyone's total points.
+import { useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { teamById } from "@/lib/mock-data";
 
 export default function LeaderboardPage() {
-  const { leaderboard } = useStore();
+  const { leaderboard, refreshLeaderboard } = useStore();
   const rows = leaderboard();
+
+  // The store only loads standings once at session start; re-pull whenever
+  // this screen is opened so points from recently-settled fixtures show up.
+  useEffect(() => {
+    refreshLeaderboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <main className="px-4 pt-5">

@@ -55,6 +55,7 @@ type Store = {
   scoreFor: (fixtureId: string) => { result: number; potm: number; total: number } | null;
   myTotalPoints: () => number;
   leaderboard: () => LeaderboardRow[];
+  refreshLeaderboard: () => Promise<void>;
   createLeague: (name: string) => Promise<League>;
   joinLeague: (code: string) => Promise<League>;
   leagueLeaderboard: (leagueId: string) => Promise<LeagueStanding[]>;
@@ -431,6 +432,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const leaderboard = useCallback(() => leaderboardRows, [leaderboardRows]);
 
+  // Re-pull the global table from Supabase. The store only loads it once, at
+  // session hydration, so screens that show it call this on mount to pick up
+  // points awarded by the settle cron since then.
+  const refreshLeaderboard = useCallback(async () => {
+    await loadLeaderboard(userId);
+  }, [loadLeaderboard, userId]);
+
   // ---- leagues -------------------------------------------------------------
   const createLeague = useCallback(
     async (name: string): Promise<League> => {
@@ -501,6 +509,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     scoreFor,
     myTotalPoints,
     leaderboard,
+    refreshLeaderboard,
     createLeague,
     joinLeague,
     leagueLeaderboard,
